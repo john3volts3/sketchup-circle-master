@@ -14,8 +14,11 @@
 #      (their outer loop is broken).
 #   3. On the end that carries a face: new arc (N segments, same start and
 #      sweep) and two helper lines closing a face on the EMPTY side of the
-#      arc: lines to the corner point (outer corner) or radii to the center
-#      (inner corner). find_faces: helper face + end face.
+#      arc: lines to a point on the bisector twice as far from the center as
+#      the corner point (outer corner; Circle Master: lines along the
+#      tangents made SketchUp merge the first vertices of a finer arc into
+#      them) or radii to the center (inner corner). find_faces: helper face
+#      + end face.
 #   4. Push/Pull of the helper face up to the plane of the other end: curved
 #      wall and other arc, both native.
 #   5. find_faces on the other arc (its end face), erase the helper edges
@@ -170,6 +173,12 @@ module CircleMaster
         d2 = nn.cross(c.vector_to(t2))
         q = Geom.intersect_line_line([t1, d1], [t2, d2])
         raise FAILED unless q
+        # Helper lines towards a point twice as far from the center as the
+        # corner point, not along the tangents: there they ran so close to
+        # the new arc near the tangent points (r x (1 - cos(step)): 0.02 mm
+        # for 24 segments of a 10 mm radius) that SketchUp merged its first
+        # vertex into them (tolerance 0.001"), and no helper face was made.
+        q = q.offset(c.vector_to(q))
       else
         q = c
       end
@@ -207,7 +216,10 @@ module CircleMaster
       arc = entities.add_arc(c, xaxis, nn, r, 0, body.sweep, n)
       arc.each { |e| e.layer = layers[0] }
       arc.first.find_faces
-      helper = arc.first.faces.find { |f| Resegmenter.side_of(f, arc.first, c) == empty_side }
+      # Side tested at the middle segment, where the helper face is widest
+      # (at the first one it narrows to a point at the tangent point).
+      mid = arc[arc.length / 2]
+      helper = mid.faces.find { |f| Resegmenter.side_of(f, mid, c) == empty_side }
       raise FAILED unless helper
 
       # 4. Push/Pull up to the other end.

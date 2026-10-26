@@ -112,6 +112,17 @@ module CircleMasterTests
     "#{n} segments"
   end
 
+  # Segment count change to +n+ of the rounded corner whose arc is centered
+  # at +center+, with the Resegmenter of +mod+ (CircleAdvanced or
+  # CircleMaster): rounded corners go through Fillet.
+  def self.run_fillet(mod, solid, center, n)
+    ents = inner(solid)
+    arc = arcs_at(ents, center).first
+    raise 'no native arc at the given center' unless arc
+    mod::Resegmenter.run(ents, [arc.first_edge], n)
+    "#{n} segments"
+  end
+
   # Runs the two +engines+ ([[key, label, block], [key, label, block]],
   # reference first, Circle Master second) on +solid+, each in an aborted
   # operation. Checks and notes go to +c+; one report row is added.
@@ -325,6 +336,24 @@ module CircleMasterTests
           tests.compare(c, model, g, 'segments', "#{name}, 24 -> #{n}",
                         [[:ca, 'Circle Advanced', -> { tests.run_segments(CircleAdvanced::Volume, g, center, n) }],
                          [:cm, 'Circle Master', -> { tests.run_segments(CircleMaster::Volume, g, center, n) }]])
+        end
+      end
+    end
+
+    # Rounded corners (Fillet, which uses Volume.repair_holes and
+    # Volume.tolerance), compared with Circle Advanced.
+    [['outer', :add_rounded_block], ['inner', :add_rounded_l]].each_with_index do |(kind, builder), i|
+      test "N#{native_cases.length + i + 1} Engines, segments: rounded corner, #{kind}", info: true do |c, model|
+        next c.skip('Circle Advanced not installed in this SketchUp') unless tests.ca_engine?
+        g = model.entities.add_group
+        o = tests.pt(x0 + (native_cases.length + i) * step, y0 + 2 * step, 0)
+        center = tests.send(builder, g.entities, o, 40.mm, 10.mm, 20.mm)
+        top = tests.pt(center.x, center.y, 20.mm)
+        c.check(g.manifold?, 'native solid is a solid')
+        [24, 6].each do |n|
+          tests.compare(c, model, g, 'segments', "rounded corner, #{kind}, 12 -> #{n}",
+                        [[:ca, 'Circle Advanced', -> { tests.run_fillet(CircleAdvanced, g, top, n) }],
+                         [:cm, 'Circle Master', -> { tests.run_fillet(CircleMaster, g, top, n) }]])
         end
       end
     end

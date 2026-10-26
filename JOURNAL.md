@@ -103,3 +103,17 @@
 - **Résultats** (2021 Pro et Make 2017) : 9/9 ; 27 comparaisons identiques sur 28, la 28e (cercle à point de coupe) n'était pas reconnue par l'ancien Cylinder Resize et est reconstruite par Circle Master ; plaque de 20 trous, rayon : 2,0 s au lieu de 11,0 s (2021), 1,3 s au lieu de 7,2 s (2017).
 - **FSD.md** — Section « Moteur de reconstruction unique », différences avec Cylinder Resize, tests, structure. **PRD.md** — Q-2 et Q-3 tranchées, décisions.
 - Test utilisateur OK dans SketchUp 2021 (segments d'un cylindre, trou par *Soustraire* redimensionné en valeur et en incrément, annulation, plusieurs trous, coin arrondi).
+
+### Étape 6 des directives : batterie complète automatique
+
+- **Demande utilisateur** : tests entièrement automatiques.
+- **tools/tests/run_tests.rb** — Interceptions ajoutées : `UI.inputbox` et `UI.messagebox` avec réponses préparées, zone Mesures (`vcb_label`, `vcb_value`) ; avant chaque test, réglages connus en mémoire (48, diamètre, auto) puis remis, outil désactivé, groupes fermés (`close_all`) ; Z1 : seules des écritures dans `CircleMaster` (interceptées).
+- **tools/tests/command_cases.rb** (créé) — 31 cas : C1 à C7 (outil Circle), M1 à M6 (mode modification), F1 à F3 (coins arrondis), K1 et K2 (copie, double-clic), R1 à R7 (redimensionnement), X1 à X3 (petits trous, définitions), D1 et D2 (fenêtre Settings, extension) ; point de saisie simulé, face sous le curseur fournie, fenêtre Settings pilotée en JavaScript ; diagnostic des refus (`note_feedback`, `watch_fillet_check`).
+- **tools/tests/engine_cases.rb** — N7 et N8 : coins arrondis face à Circle Advanced (`run_fillet`).
+- Erreurs de tests corrigées en route : disque au sol tourné vers le bas (C1) ; composant ouvert : entités rapportées en coordonnées du modèle (R7).
+- **Défauts du plugin trouvés et corrigés** (plans validés par l'utilisateur) :
+  - **circle_master/chains.rb** — `circumcircle` : seuil d'alignement relatif (`d <= 1e-12 × |a|² × |b|²`) au lieu de `d < 1e-12` ; régression du moteur unique sur les très petits cercles cassés (Ø 1 mm et 0,5 mm à 48 segments) que l'ancien Cylinder Resize reconstruisait.
+  - **circle_master/fillet.rb** — Coin arrondi extérieur : lignes provisoires vers `q + (q − c)` au lieu du coin `q` (le long des tangentes, SketchUp collait les premiers sommets d'un arc plus fin, tolérance 0,001″) ; face provisoire cherchée au segment du milieu de l'arc (au 1er, elle finit en pointe). Défaut hérité de Circle Advanced 1.4.0 (confirmé par la comparaison N7).
+- **Résultats** : SketchUp 2021 Pro 39/39 ; Make 2017 37/37 (C7, R7 sautés : SketchUp 2020.1+) ; comparaisons identiques sauf les deux cas où l'ancien plugin échouait.
+- **FSD.md** — Tests (cas, méthode, résultats, défauts corrigés, limite des arcs plus fins que la tolérance), différence « coin arrondi extérieur » avec Circle Advanced, test d'alignement relatif. **PRD.md** — Vérification des critères d'acceptation, décisions.
+- Test utilisateur OK dans SketchUp 2021 sur une vraie pièce (coin arrondi passé à plus de segments).

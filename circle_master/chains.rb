@@ -2,7 +2,8 @@
 # Ported from Solid Progress 2.0.1 (solid_progress/circle_restore/detector.rb),
 # itself ported from Re-Cercle v2.0.0 (re_cercle/detector.rb): chain
 # detection only (Run, Chain, chain_from and the geometry it needs),
-# unchanged except the namespace (CircleMaster::Chains). The search of every
+# unchanged except the namespace (CircleMaster::Chains) and the collinearity
+# test of circumcircle, made relative to the size. The search of every
 # chain of a solid and their classification (find_chains, analyse) are not
 # needed by Circle Master. Circle Master does not depend on either plugin.
 #
@@ -76,7 +77,10 @@ module CircleMaster
       b = p3.vector_to(p2)
       axb = a.cross(b)
       d = axb.dot(axb).to_f
-      return nil if d < 1e-12
+      # Collinear when the angle between a and b is null: relative test,
+      # whatever the size (the absolute threshold of Re-Cercle, d < 1e-12,
+      # took the corners of a 1 mm circle of 48 segments for collinear).
+      return nil if d <= 1e-12 * a.dot(a).to_f * b.dot(b).to_f
       num = (scale(b, a.dot(a)) - scale(a, b.dot(b))).cross(axb)
       center = p3 + scale(num, 0.5 / d)
       [center, axb.normalize, center.distance(p1).to_f]

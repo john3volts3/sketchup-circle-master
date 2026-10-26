@@ -86,6 +86,9 @@ module CircleMasterTests
     @writes = []
     @tests = []
     @engine_rows = []
+    @vcb = {}
+    @inputs = []
+    @answers = []
     reload_plugin
     define_tests
     hook
@@ -110,6 +113,52 @@ module CircleMasterTests
     @engine_rows
   end
 
+  # Last label and value written to the Measurements box.
+  def self.vcb
+    @vcb
+  end
+
+  # Answers given to the next UI.inputbox calls (arrays of values; none
+  # left: cancelled) and UI.messagebox calls (IDYES, IDNO...; none left:
+  # IDYES for a question, IDOK otherwise).
+  def self.inputs
+    @inputs
+  end
+
+  def self.answers
+    @answers
+  end
+
+  SETTINGS_IVARS = %i[@segments @input_mode @coord_mode].freeze
+
+  # Before each test: known settings in memory (48 segments, diameter,
+  # coordinates auto), whatever the preferences of this PC; after it, the
+  # former values back. Nothing is written to the preferences.
+  def self.save_state
+    settings = CircleMaster::Settings
+    @saved_state = {
+      settings: SETTINGS_IVARS.map { |v| [v, settings.instance_variable_get(v)] },
+      previous: CircleMaster::CircleTool.previous
+    }
+    settings.instance_variable_set(:@segments, 48)
+    settings.instance_variable_set(:@input_mode, 'diameter')
+    settings.instance_variable_set(:@coord_mode, 'auto')
+    @inputs.clear
+    @answers.clear
+  end
+
+  def self.restore_state
+    return unless @saved_state
+    model = Sketchup.active_model
+    model.select_tool(nil)
+    close_all(model)
+    model.selection.clear
+    settings = CircleMaster::Settings
+    @saved_state[:settings].each { |v, value| settings.instance_variable_set(v, value) }
+    CircleMaster::CircleTool.previous = @saved_state[:previous]
+    @saved_state = nil
+  end
+
   def self.schedule(&block)
     timer = UI.start_timer(STEP_DELAY, false) do
       UI.stop_timer(timer)
@@ -126,6 +175,7 @@ module CircleMasterTests
   end
 
   def self.next_test
+    restore_state
     # Unused definitions that appeared during the previous test.
     if @cases.last
       model = Sketchup.active_model
@@ -143,6 +193,7 @@ module CircleMasterTests
     c.info = info
     @cases << c
     Sketchup.status_text = "#{LOG} #{name}"
+    save_state
     guarded(c) { block.call(c, Sketchup.active_model) }
     schedule { next_phase(c) }
   end
@@ -166,6 +217,7 @@ module CircleMasterTests
 
   def self.fatal(e)
     @fatal = "#{e.class}: #{e.message} | #{e.backtrace.first(6).join(' | ')}"
+    restore_state
     finish
   end
 
@@ -181,25 +233,42 @@ module CircleMasterTests
     CircleMaster::FILES.each { |f| load File.join(CircleMaster::PLUGIN_DIR, "#{f}.rb") }
     load File.join(TESTS_DIR, 'vcb_parser_cases.rb')
     load File.join(TESTS_DIR, 'engine_cases.rb')
+    load File.join(TESTS_DIR, 'command_cases.rb')
   ensure
     $VERBOSE = verbose
   end
 
-  # Message boxes and preference writes recorded instead of done; status
-  # texts recorded too.
+  # Message boxes, input boxes and preference writes recorded instead of
+  # done (prepared answers); status texts and the Measurements box recorded
+  # too.
   def self.hook
     tests = self
     ui = UI.singleton_class
     ui.send(:alias_method, :cm_tests_messagebox, :messagebox) unless ui.method_defined?(:cm_tests_messagebox)
     UI.define_singleton_method(:messagebox) do |*args|
       tests.messages << args.first.to_s
-      args[1] == MB_YESNO ? IDYES : IDOK
+      answer = tests.answers.shift
+      answer || (args[1] == MB_YESNO ? IDYES : IDOK)
+    end
+    ui.send(:alias_method, :cm_tests_inputbox, :inputbox) unless ui.method_defined?(:cm_tests_inputbox)
+    UI.define_singleton_method(:inputbox) do |*_args|
+      tests.inputs.shift || false
     end
     su = Sketchup.singleton_class
     su.send(:alias_method, :cm_tests_status_text=, :status_text=) unless su.method_defined?(:cm_tests_status_text=)
     Sketchup.define_singleton_method(:status_text=) do |text|
       tests.status << text.to_s
       Sketchup.send(:cm_tests_status_text=, text)
+    end
+    su.send(:alias_method, :cm_tests_vcb_label=, :vcb_label=) unless su.method_defined?(:cm_tests_vcb_label=)
+    Sketchup.define_singleton_method(:vcb_label=) do |text|
+      tests.vcb[:label] = text.to_s
+      Sketchup.send(:cm_tests_vcb_label=, text)
+    end
+    su.send(:alias_method, :cm_tests_vcb_value=, :vcb_value=) unless su.method_defined?(:cm_tests_vcb_value=)
+    Sketchup.define_singleton_method(:vcb_value=) do |text|
+      tests.vcb[:value] = text.to_s
+      Sketchup.send(:cm_tests_vcb_value=, text)
     end
     su.send(:alias_method, :cm_tests_write_default, :write_default) unless su.method_defined?(:cm_tests_write_default)
     Sketchup.define_singleton_method(:write_default) do |*args|
@@ -211,9 +280,13 @@ module CircleMasterTests
 
   def self.unhook
     return unless @hooked
-    UI.singleton_class.send(:alias_method, :messagebox, :cm_tests_messagebox)
+    ui = UI.singleton_class
+    ui.send(:alias_method, :messagebox, :cm_tests_messagebox)
+    ui.send(:alias_method, :inputbox, :cm_tests_inputbox)
     su = Sketchup.singleton_class
     su.send(:alias_method, :status_text=, :cm_tests_status_text=)
+    su.send(:alias_method, :vcb_label=, :cm_tests_vcb_label=)
+    su.send(:alias_method, :vcb_value=, :cm_tests_vcb_value=)
     su.send(:alias_method, :write_default, :cm_tests_write_default)
     @hooked = false
   end
@@ -238,6 +311,18 @@ module CircleMasterTests
     else
       raise 'No new empty model: close the current model and run the tests again'
     end
+  end
+
+  # Opens +path+ (groups or components) for editing: SketchUp 2020.1+ only.
+  def self.open_path?(model)
+    model.respond_to?(:active_path=)
+  end
+
+  def self.close_all(model)
+    return unless open_path?(model) && model.active_path
+    model.active_path = nil
+  rescue ArgumentError, TypeError
+    model.active_path = []
   end
 
   # Runs the block with the input mode set in memory only.
@@ -522,10 +607,14 @@ module CircleMasterTests
     end
 
     define_engine_tests
+    define_command_tests
 
-    # Last: the tests must not have written any preference.
-    test 'Z1 No preference written' do |c, _model|
-      c.check(tests.writes.empty?, 'no Sketchup.write_default call', tests.writes.uniq.join(', '))
+    # Last: preference writes (intercepted, never done) only to the Circle
+    # Master section, never to the former plugins.
+    test 'Z1 Preferences: only CircleMaster written (intercepted)' do |c, _model|
+      foreign = tests.writes.reject { |w| w.start_with?('CircleMaster/') }
+      c.check(foreign.empty?, 'no write to another section', foreign.uniq.join(', '))
+      c.note("intercepted writes: #{tests.writes.uniq.join(', ')}") unless tests.writes.empty?
     end
   end
 

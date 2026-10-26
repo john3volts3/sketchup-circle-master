@@ -76,6 +76,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-07 | `7.5` et `7,5` acceptés et égaux, sur un PC à virgule et sur un PC à point (cas de l'analyseur avec le vrai `to_l`) | EF-11 |
 | CA-06 | Batterie verte sous 2021 Pro et Make 2017 | NF-04, NF-06 |
 
+Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 à C7, M1 à M6, F1 à F3, K1, K2, D1), CA-02 (R1), CA-03 (R5, E1 à E8), CA-04 et CA-07 (P1, 92 cas avec le vrai `to_l`), CA-06 (2021 Pro 39/39, Make 2017 37/37 avec C7 et R7 sautés : SketchUp 2020.1+). CA-05 vérifié hors SketchUp à l'étape 1 (13 cas, script de l'essai non conservé) : pas encore dans la batterie.
+
 ## 9. Questions ouvertes et décisions
 
 ### Questions ouvertes
@@ -96,6 +98,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-26 | Positionnement | Gratuit (MIT) ; pas de commande autonome de réparation des cercles (plugins payants équivalents) |
 | 2026-10-26 | Moteur de reconstruction | Comparer les trois versions (Circle Advanced, Cylinder Resize, Solid Progress) avant d'en garder une seule (Q-2) |
 | 2026-10-26 | Moteur unique (Q-2, Q-3) | Moteur de Solid Progress (`volume.rb` + détection par chaînes `chains.rb`, réparation des trous par grilles) avec `radii:` et `segments:` ; `cylinders/rebuilder.rb` et l'ancien `volume.rb` retirés. Vérifié face aux trois moteurs d'origine installés (2021 Pro, Make 2017) : 27 comparaisons sur 28 identiques, la 28e est un cercle à point de coupe que l'ancien Cylinder Resize ne reconnaissait pas |
+| 2026-10-26 | Batterie complète (étape 6) | Entièrement automatique (demande de l'utilisateur) : souris et clavier simulés, fenêtres pilotées, préférences interceptées ; seul geste : le clic sur l'écran d'accueil de Make 2017 |
+| 2026-10-26 | Défauts trouvés par la batterie | Corrigés en 1.0.0 : seuil d'alignement de `Chains` rendu relatif (très petits cercles cassés) ; coin arrondi extérieur à plus de segments (`fillet.rb` : lignes provisoires vers un point de la bissectrice, face cherchée au segment du milieu), défaut hérité de Circle Advanced 1.4.0 |
 | 2026-10-26 | Détecteur des cylindres | Cercle cassé : détection par chaîne d'abord, moyenne des sommets en secours (aucun cylindre reconnu avant n'est perdu) |
 | 2026-10-26 | Anciens plugins pendant la construction | Laissés installés (SketchUp 2017 et 2021) : menus en double acceptés, pas de conflit Ruby (modules distincts) ; les tests ne vérifient que Circle Master |
 | 2026-10-26 | Noms dans *Annuler* | Préfixe du nom affiché (directive § 1, comme Solid Progress) : *Circle Master — Circle*, *Circle Master — Resize Circle*… |
