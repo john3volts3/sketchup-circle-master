@@ -4,7 +4,7 @@
 require 'sketchup.rb'
 
 module CircleMaster
-  FILES = %w[settings].freeze
+  FILES = %w[settings vcb_parser volume fillet resegmenter circle_tool settings_dialog].freeze
 
   FILES.each { |f| Sketchup.require(File.join(PLUGIN_DIR, f)) }
 
@@ -20,7 +20,12 @@ module CircleMaster
   end
 
   def self.activate_circle_tool
-    not_available('Circle')
+    Sketchup.active_model.select_tool(CircleTool.new)
+  end
+
+  def self.circle_tool_active?
+    tools = Sketchup.active_model.tools
+    tools.respond_to?(:active_tool) && tools.active_tool.is_a?(CircleTool)
   end
 
   def self.resize_selection
@@ -32,7 +37,7 @@ module CircleMaster
   end
 
   def self.show_settings
-    not_available('Settings…')
+    SettingsDialog.show
   end
 
   # Development reload: CircleMaster.reload
@@ -53,6 +58,7 @@ module CircleMaster
     cmd_circle.status_bar_text =
       'Draw a circle: diameter input by default, remembered segment count. ' \
       'With circles or arcs selected: type a new size, an increment or a segment count.'
+    cmd_circle.set_validation_proc { circle_tool_active? ? MF_CHECKED : MF_UNCHECKED }
 
     cmd_dialog = UI::Command.new('Resize Cylinders…') { resize_selection }
     cmd_dialog.small_icon = icon('resize_dialog_16.png')

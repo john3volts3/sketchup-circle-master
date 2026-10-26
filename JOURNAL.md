@@ -25,3 +25,28 @@
 - **PRD.md** — Q-2 et Q-3 précisées ; décisions : comparaison à trois, anciens plugins laissés installés, priorité de reprise de `input_mode`.
 - **FSD.md** — Premières sections : réglages et reprise, interface, structure des fichiers.
 - Vérifications : `ruby -c` sur les 4 fichiers, pas de syntaxe postérieure à Ruby 2.2 ; plugin déployé dans les dossiers Plugins de SketchUp 2021 et 2017 (test de chargement par l'utilisateur).
+- Test utilisateur OK (menu, barre d'outils, icônes) ; commit `d00d809`, poussé.
+
+### Étape 2 des directives : analyseur de saisie unique
+
+- **Décision de l'utilisateur** : *Cylinder Resize Tool* suit le réglage diamètre / rayon commun (dans Cylinder Resize 0.3.0, `15` y était toujours un diamètre).
+- **circle_master/vcb_parser.rb** (créé) — Analyseur de Circle Advanced sans changement (`parse`, `split_sign`, `to_length`) ; ajout de `parse_size` (refus des segments, message de Cylinder Resize), `radius?`, `radius_from`, `target_radius` (repris de `circle_tool.rb`, refus d'une taille ≤ 0), `describe` (repris de Cylinder Resize) ; une valeur sans marqueur suit `Settings.input_mode`. Le paramètre `default_kind` de Cylinder Resize disparaît.
+- **circle_master/main.rb** — `FILES` charge `vcb_parser`.
+- **tools/tests/vcb_parser_cases.rb** (créé) — 87 cas (les « 26 cas » de Circle Advanced n'avaient pas été conservés : reconstitués à partir des deux FSD) ; hors SketchUp avec `Sketchup` et `String#to_l` simulés, ou dans SketchUp avec le vrai `to_l` ; mode de saisie changé en mémoire seulement. 87/87 hors SketchUp ; un analyseur volontairement faussé (copie dans le scratchpad) donne 4 échecs, le fichier de cas les détecte.
+- **FSD.md** — Section « Saisie : analyseur unique », différences avec les analyseurs d'origine, structure.
+- **PRD.md** — Décision : Cylinder Resize Tool suit le réglage commun.
+- **DIRECTIVES_BUNDLE.md** — § 4.1 : cas conservés dans `tools/tests/`.
+- Fichiers `vcb_parser.rb` et `main.rb` déployés dans SketchUp 2021 et 2017.
+- Rien de visible à tester à cette étape (l'analyseur n'est relié à aucun bouton) : commit reporté, avec l'étape 3.
+
+### Étape 3 des directives : outil Circle et réglages
+
+- **Décision de l'utilisateur** : noms dans *Annuler* préfixés « Circle Master — » (choix A).
+- **circle_master/circle_tool.rb** (repris de Circle Advanced 1.4.0) — Module `CircleMaster` ; méthodes privées `radius_from` / `target_radius` supprimées, 7 appels vers `VcbParser` ; constante `EPSILON` retirée (ne servait qu'à elles) ; noms d'opération `"#{PLUGIN_NAME} — …"`.
+- **circle_master/resegmenter.rb**, **fillet.rb**, **volume.rb** (repris) — Nom du module seulement ; `volume.rb` provisoire jusqu'au choix du moteur unique (étape 5).
+- **circle_master/settings_dialog.rb** (repris) — Module, `preferences_key: 'CircleMaster_Settings'`, `CircleMaster.circle_tool_active?`.
+- **circle_master/html/settings.html** (repris) — Titre et en-tête « Circle Master » ; légende « Value typed without marker (all commands) ».
+- **circle_master/main.rb** — `FILES` complet de Circle Advanced ; `Circle` active `CircleTool`, `Settings…` ouvre `SettingsDialog` ; `circle_tool_active?` et case cochée du bouton Circle.
+- **FSD.md** — Section « Outil Circle et fenêtre Settings » (différences avec Circle Advanced), structure. **PRD.md** — Décision des noms dans *Annuler*.
+- Vérifications : `ruby -wc` sur tous les fichiers ; plus aucune référence à `CircleAdvanced` hors reprise des réglages ; `diff` de chaque fichier repris contre l'original = changements listés seulement ; 87/87 cas de l'analyseur ; déployé dans SketchUp 2021 et 2017.
+- Test utilisateur OK dans SketchUp 2021 (tracé, saisies, modification, segments d'un cylindre, annulation, Settings) ; étapes 2 et 3 commitées ensemble.

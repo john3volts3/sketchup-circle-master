@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Circle Master — Settings</title>
+<style>
+  body {
+    font-family: "Segoe UI", Tahoma, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    margin: 0;
+    padding: 14px 16px;
+    background: #f3f3f3;
+    color: #222;
+  }
+  h1 { font-size: 14px; margin: 0 0 12px; }
+  .row { margin-bottom: 12px; }
+  label.field { display: block; margin-bottom: 4px; }
+  input[type=number] { width: 80px; padding: 3px 4px; font-size: 13px; }
+  fieldset { border: 1px solid #ccc; padding: 6px 10px 8px; margin: 0 0 12px; }
+  legend { padding: 0 4px; }
+  fieldset label { display: block; margin: 3px 0; }
+  .hint { font-size: 11px; color: #555; line-height: 1.4; margin-bottom: 10px; }
+  .hint code { background: #e4e4e4; padding: 0 3px; border-radius: 2px; }
+  .warning { font-size: 11px; color: #555; line-height: 1.4; margin-top: 4px; }
+  .warning.active { color: #b00020; font-weight: bold; }
+  #error { color: #b00020; min-height: 16px; margin-bottom: 6px; }
+  .buttons { text-align: right; }
+  button { min-width: 80px; padding: 4px 10px; margin-left: 6px; font-size: 13px; }
+</style>
+</head>
+<body>
+<form id="form" autocomplete="off">
+  <h1>Circle Master</h1>
+
+  <div class="row">
+    <label class="field" for="segments">Default segment count</label>
+    <input id="segments" type="number" min="3" max="999" step="1" required>
+  </div>
+
+  <fieldset>
+    <legend>Value typed without marker (all commands)</legend>
+    <label><input type="radio" name="mode" value="diameter"> Diameter</label>
+    <label><input type="radio" name="mode" value="radius"> Radius</label>
+  </fieldset>
+
+  <div class="hint">
+    Measurements box: <code>50</code> default value, <code>25r</code> radius,
+    <code>50d</code> diameter, <code>48s</code> segments, <code>50;36s</code> combined.
+  </div>
+
+  <fieldset>
+    <legend>Advanced — Coordinate mode (inside groups)</legend>
+    <label><input type="radio" name="coord" value="auto"> Auto (recommended)</label>
+    <label><input type="radio" name="coord" value="world"> World</label>
+    <label><input type="radio" name="coord" value="local"> Local</label>
+    <div id="coordWarning" class="warning">
+      Change only if circles drawn inside an open group appear at the wrong
+      place or size. A wrong setting misplaces every circle drawn inside groups.
+    </div>
+  </fieldset>
+
+  <div id="error"></div>
+
+  <div class="buttons">
+    <button type="button" id="cancel">Cancel</button>
+    <button type="submit" id="ok">OK</button>
+  </div>
+</form>
+
+<script>
+  var minSeg = 3, maxSeg = 999;
+
+  function setValues(v) {
+    minSeg = v.min; maxSeg = v.max;
+    var input = document.getElementById('segments');
+    input.min = minSeg; input.max = maxSeg;
+    input.value = v.segments;
+    var radios = document.getElementsByName('mode');
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].checked = (radios[i].value === v.mode);
+    }
+    var coords = document.getElementsByName('coord');
+    for (var j = 0; j < coords.length; j++) {
+      coords[j].checked = (coords[j].value === v.coord);
+      coords[j].addEventListener('change', updateCoordWarning);
+    }
+    updateCoordWarning();
+    input.focus();
+    input.select();
+  }
+
+  function showError(msg) {
+    document.getElementById('error').textContent = msg;
+  }
+
+  function selectedMode() {
+    var radios = document.getElementsByName('mode');
+    for (var i = 0; i < radios.length; i++) {
+      if (radios[i].checked) { return radios[i].value; }
+    }
+    return 'diameter';
+  }
+
+  function selectedCoord() {
+    var radios = document.getElementsByName('coord');
+    for (var i = 0; i < radios.length; i++) {
+      if (radios[i].checked) { return radios[i].value; }
+    }
+    return 'auto';
+  }
+
+  // Highlights the warning when a forced mode (world/local) is selected.
+  function updateCoordWarning() {
+    var w = document.getElementById('coordWarning');
+    w.className = selectedCoord() === 'auto' ? 'warning' : 'warning active';
+  }
+
+  document.getElementById('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var raw = document.getElementById('segments').value;
+    var n = parseInt(raw, 10);
+    if (!/^\d+$/.test(raw) || n < minSeg || n > maxSeg) {
+      showError('Segments: integer from ' + minSeg + ' to ' + maxSeg + '.');
+      return;
+    }
+    sketchup.save(n, selectedMode(), selectedCoord());
+  });
+
+  document.getElementById('cancel').addEventListener('click', function () {
+    sketchup.cancel();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.keyCode === 27) { sketchup.cancel(); }
+  });
+
+  window.addEventListener('load', function () { sketchup.ready(); });
+</script>
+</body>
+</html>
