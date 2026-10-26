@@ -129,3 +129,14 @@
 - **Résultats** : SketchUp 2021 Pro 42/42, Make 2017 40/40 (C7, R7 sautés) ; comparaisons inchangées.
 - **FSD.md** — Différences avec Cylinder Resize (segments, zone Mesures, aide), analyseur, tests. **PRD.md** — EF-12, CA-08, décision.
 - Test utilisateur OK dans SketchUp 2021 (48s, 20;36s, annulation, fenêtre).
+
+### Étape 7 des directives : documentation et livraison 1.0.0
+
+- **circle_master/volume.rb** — Messages de `from_curve` sans « use Circle Re-Segment ».
+- **tools/tests/command_cases.rb** — D3 : reprise des réglages des anciens plugins (CA-05) avec `read_default` remplacé par une table (rien lu ni écrit sur le disque), priorités et écriture dans `CircleMaster` seulement.
+- **README.md**, **README.fr.md** (créés) — Présentation, installation (désinstaller Circle Advanced et Cylinder Resize), raccourci C, prise en main, saisies, versions testées, origine, développement, licence ; lien relatif vers les releases (pas d'identifiant en dur).
+- **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** (créés) — Fusion du manuel de Circle Advanced et du README de Cylinder Resize, avec les nouveautés (réglage commun, point ou virgule, segments dans les commandes de cylindres, coins arrondis corrigés, fenêtre Settings), « quelle commande pour quoi », limites, dépannage ; sans captures (à faire avec le matériel de démonstration).
+- **CHANGELOG.md** (créé) — Entrée 1.0.0.
+- **PRD.md** — EF-01 à EF-12 « livrée en v1.0.0 », CA-05 couvert par D3, historique des livraisons. **FSD.md** — État, renvoi aux manuels, messages, historique des versions.
+- Batterie : SketchUp 2021 Pro 43/43, Make 2017 41/41 (C7, R7 sautés).
+- Test utilisateur confirmé avant livraison ; `build/circle_master.rbz` (25 fichiers) ; aucune donnée personnelle (historique, icônes, rbz) ; commit, tag `v1.0.0`, release GitHub privée.

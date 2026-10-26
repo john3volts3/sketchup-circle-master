@@ -7,7 +7,7 @@ Rédigée pendant la construction du bundle, à partir des FSD des deux plugins 
 
 Plan prévu : objectif ; entrées (sélections, saisies de l'analyseur unique) ; outil Circle ; redimensionnement des cylindres ; moteur de reconstruction unique ; réglages et reprise des anciens ; interface (menu, barre d'outils, fenêtres) ; limitations ; structure des fichiers ; tests ; historique des versions.
 
-État : les quatre commandes sont portées et passent par un moteur de reconstruction unique (étapes 1 à 5 des directives). Reste : batterie complète (étape 6), documentation.
+État : version 1.0.0 livrée (étapes 1 à 7 des directives). Le mode d'emploi détaillé est dans les manuels `docs/USER_MANUAL_EN.md` et `docs/USER_MANUAL_FR.md` ; ce FSD décrit le fonctionnement et les différences avec les plugins d'origine.
 
 ## Outil Circle et fenêtre Settings (EF-01)
 
@@ -21,6 +21,7 @@ Différences avec Circle Advanced :
 | Rayon d'une saisie, incrément | méthodes privées de `CircleTool` | `VcbParser.radius_from`, `VcbParser.target_radius` (mêmes calculs, même refus d'une taille ≤ 0) |
 | Fenêtre Settings | titre « Circle Advanced », position mémorisée sous `CircleAdvanced_Settings` ; taille fixe 360 × 480 imposée à chaque ouverture | titre « Circle Master », `CircleMaster_Settings` ; légende « Value typed without marker (all commands) » ; **redimensionnable**, 360 × 560 à la première ouverture, minimum 320 × 400, défilement si trop petite ; SketchUp mémorise taille et position entre les sessions |
 | Réglages | section `CircleAdvanced` | section `CircleMaster`, reprise des anciens (ci-dessous) |
+| Messages de refus d'un cylindre | « … : use Circle Re-Segment » | sans renvoi à Circle Re-Segment (plugin que les utilisateurs n'ont pas) : « Cylinder not supported (raison) », « Circle shared with another surface » |
 | Coin arrondi **extérieur** passé à plus de segments (ex. rayon 10 mm, 12 → 24) | refusé (« The rounded corner could not be rebuilt ») : les lignes provisoires suivaient les tangentes, si près du nouvel arc près des points de tangence (r × (1 − cos pas) : 0,02 mm) que SketchUp y collait ses premiers sommets (tolérance 0,001″), et la face provisoire était cherchée au 1er segment, où elle finit en pointe | `fillet.rb` : lignes provisoires vers un point de la bissectrice deux fois plus loin du centre que le coin ; face provisoire cherchée au segment du milieu. Vérifié : rayon 10 mm 12 → 24, rayon 2 mm 12 → 48 ; mêmes résultats que Circle Advanced là où il fonctionnait (12 → 6, coin intérieur) |
 
 ## Redimensionnement des cylindres (EF-02 à EF-06)
@@ -132,7 +133,7 @@ Batterie automatique sur le modèle de Solid Progress, hors `.rbz` :
   - N7 et N8 (dans `engine_cases.rb`) : coins arrondis extérieur et intérieur, 12 → 24 et 12 → 6, face à Circle Advanced.
   - Ne sont pas testés : le moteur d'inférence de SketchUp (accrochages) et ce qui est dessiné à l'écran (seul le calcul des couleurs l'est).
 
-Résultat du 2026-10-26 : SketchUp 2021 Pro 42/42 ; Make 2017 40/40, C7 et R7 sautés (ouvrir un groupe ou un composant par programme demande SketchUp 2020.1). Comparaisons : identiques, sauf le cercle à point de coupe (non reconnu par l'ancien Cylinder Resize) et le coin arrondi extérieur 12 → 24 (refusé par l'ancien Circle Advanced), reconstruits par Circle Master.
+Résultat du 2026-10-26 : SketchUp 2021 Pro 43/43 ; Make 2017 41/41, C7 et R7 sautés (ouvrir un groupe ou un composant par programme demande SketchUp 2020.1). Comparaisons : identiques, sauf le cercle à point de coupe (non reconnu par l'ancien Cylinder Resize) et le coin arrondi extérieur 12 → 24 (refusé par l'ancien Circle Advanced), reconstruits par Circle Master.
 
 **Défauts trouvés par la batterie et corrigés** (2026-10-26) : très petits cercles cassés à beaucoup de segments non reconstruits (régression du moteur unique : seuil d'alignement absolu de `Chains.circumcircle`, rendu relatif) ; coin arrondi extérieur passé à plus de segments refusé (défaut de Circle Advanced 1.4.0, corrigé dans `fillet.rb`, voir le tableau de l'outil Circle).
 
@@ -167,3 +168,9 @@ tools/tests/
   command_cases.rb          # commandes pilotées comme par l'utilisateur
 LICENSE                     # MIT
 ```
+
+## Historique des versions
+
+| Version | Date | Contenu |
+|---|---|---|
+| 1.0.0 | 2026-10-26 | Réunion de Circle Advanced 1.4.0 et Cylinder Resize 0.3.0 ; analyseur et réglage diamètre / rayon uniques ; moteur de reconstruction unique ; point ou virgule décimale (EF-11) ; segments dans les commandes de cylindres (EF-12) ; coins arrondis extérieurs et très petits cercles corrigés ; fenêtre Settings redimensionnable ; batterie automatique 2021 Pro et Make 2017 |

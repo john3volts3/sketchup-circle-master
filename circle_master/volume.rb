@@ -68,11 +68,11 @@ module CircleMaster
       raise ArgumentError, 'Circle on a non planar surface' unless wall
       body, reason = build(surface_of(wall))
       unless body
-        raise ArgumentError, "Cylinder not supported (#{reason}): use Circle Re-Segment"
+        raise ArgumentError, "Cylinder not supported (#{reason})"
       end
       anchor = curve.first_edge
       unless body.loops.any? { |l| l.edges.include?(anchor) }
-        raise ArgumentError, 'Circle shared with another surface: use Circle Re-Segment'
+        raise ArgumentError, 'Circle shared with another surface'
       end
       body
     end

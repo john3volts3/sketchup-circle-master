@@ -2,7 +2,7 @@
 
 > Le *quoi* et le *pourquoi*. Le *comment* sera dans `FSD.md`. Directives de construction : `DIRECTIVES_BUNDLE.md`.
 
-Dernière mise à jour : 2026-10-26 (squelette et analyseur unique : Q-2, Q-3 et décisions).
+Dernière mise à jour : 2026-10-26 (livraison 1.0.0).
 
 ## 1. Contexte et problème
 
@@ -36,18 +36,18 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 
 | ID | Exigence | Priorité | Statut |
 |---|---|---|---|
-| EF-01 | **Outil Circle** de Circle Advanced, à l'identique : ses exigences EF-01 à EF-22 (outil comme le natif, 48 segments par défaut et mémorisés, diamètre par défaut, `r` / `d`, `48s`, `50;36s`, modification du dernier cercle, verrouillage de la normale, aperçu coloré, contexte actif, fenêtre de réglages, mode de coordonnées, mode modification des cercles et arcs sélectionnés avec valeur absolue ou incrément, segments des cercles et arcs, des extrémités de cylindre et de tronc de cône, des coins arrondis, mode copie Ctrl, double-clic) | I | proposée |
-| EF-02 | **Resize Cylinders…** (fenêtre) de Cylinder Resize : paroi d'un ou plusieurs cylindres sélectionnée, diamètre ou rayon, incréments | I | proposée |
-| EF-03 | **Cylinder Resize Tool** (outil interactif) : survol, sélection, Shift/Ctrl pour ajouter, saisie `15`, `d15`, `r7.5`, `+1`, `-0.1`, `+r0.5`, `--1` ; l'outil reste actif | I | proposée |
-| EF-04 | Troncs de cône : un incrément garde l'angle, une valeur absolue en fait un cylindre après confirmation | I | proposée |
-| EF-05 | Cercles cassés (arêtes, courbe soudée, cercle découpé par un booléen) : le cylindre redimensionné est reconstruit en cercles natifs ; soudure en secours (SketchUp 2020.1+) | I | proposée |
-| EF-06 | Trous dans un bloc et tenons : face hôte intacte ; dans un composant, la définition est modifiée | I | proposée |
-| EF-07 | Menu *Extensions > Circle Master* et barre d'outils **Circle Master** : Circle, Resize Cylinders…, Cylinder Resize Tool, Settings… | I | proposée |
-| EF-08 | **Un seul analyseur de saisie** accepté par l'outil Circle et par le redimensionnement des cylindres | Im | proposée |
-| EF-09 | **Un seul réglage diamètre / rayon** pour toutes les commandes | Im | proposée |
-| EF-10 | Réglages repris de Circle Advanced (`CircleAdvanced`) et de Cylinder Resize (`CylinderResize`) tant qu'ils ne sont pas changés dans Circle Master | Im | proposée |
-| EF-12 | **Nombre de segments dans les commandes de cylindres** (*Cylinder Resize Tool*, *Resize Cylinders…*) : `36s`, `15;36s`, `+0,2;48s` ; cylindre natif ou cassé reconstruit en natif, une étape d'annulation ; refus motivé sans rien modifier si un cylindre ne peut pas être reconstruit | Im | proposée |
-| EF-11 | **Point ou virgule décimale** dans toutes les saisies (zone Mesures, fenêtre *Resize Cylinders…*), quel que soit le séparateur décimal du PC (`7.5` et `7,5`) | Im | proposée |
+| EF-01 | **Outil Circle** de Circle Advanced, à l'identique : ses exigences EF-01 à EF-22 (outil comme le natif, 48 segments par défaut et mémorisés, diamètre par défaut, `r` / `d`, `48s`, `50;36s`, modification du dernier cercle, verrouillage de la normale, aperçu coloré, contexte actif, fenêtre de réglages, mode de coordonnées, mode modification des cercles et arcs sélectionnés avec valeur absolue ou incrément, segments des cercles et arcs, des extrémités de cylindre et de tronc de cône, des coins arrondis, mode copie Ctrl, double-clic) | I | livrée en v1.0.0 |
+| EF-02 | **Resize Cylinders…** (fenêtre) de Cylinder Resize : paroi d'un ou plusieurs cylindres sélectionnée, diamètre ou rayon, incréments | I | livrée en v1.0.0 |
+| EF-03 | **Cylinder Resize Tool** (outil interactif) : survol, sélection, Shift/Ctrl pour ajouter, saisie `15`, `d15`, `r7.5`, `+1`, `-0.1`, `+r0.5`, `--1` ; l'outil reste actif | I | livrée en v1.0.0 |
+| EF-04 | Troncs de cône : un incrément garde l'angle, une valeur absolue en fait un cylindre après confirmation | I | livrée en v1.0.0 |
+| EF-05 | Cercles cassés (arêtes, courbe soudée, cercle découpé par un booléen) : le cylindre redimensionné est reconstruit en cercles natifs ; soudure en secours (SketchUp 2020.1+) | I | livrée en v1.0.0 |
+| EF-06 | Trous dans un bloc et tenons : face hôte intacte ; dans un composant, la définition est modifiée | I | livrée en v1.0.0 |
+| EF-07 | Menu *Extensions > Circle Master* et barre d'outils **Circle Master** : Circle, Resize Cylinders…, Cylinder Resize Tool, Settings… | I | livrée en v1.0.0 |
+| EF-08 | **Un seul analyseur de saisie** accepté par l'outil Circle et par le redimensionnement des cylindres | Im | livrée en v1.0.0 |
+| EF-09 | **Un seul réglage diamètre / rayon** pour toutes les commandes | Im | livrée en v1.0.0 |
+| EF-10 | Réglages repris de Circle Advanced (`CircleAdvanced`) et de Cylinder Resize (`CylinderResize`) tant qu'ils ne sont pas changés dans Circle Master | Im | livrée en v1.0.0 |
+| EF-12 | **Nombre de segments dans les commandes de cylindres** (*Cylinder Resize Tool*, *Resize Cylinders…*) : `36s`, `15;36s`, `+0,2;48s` ; cylindre natif ou cassé reconstruit en natif, une étape d'annulation ; refus motivé sans rien modifier si un cylindre ne peut pas être reconstruit | Im | livrée en v1.0.0 |
+| EF-11 | **Point ou virgule décimale** dans toutes les saisies (zone Mesures, fenêtre *Resize Cylinders…*), quel que soit le séparateur décimal du PC (`7.5` et `7,5`) | Im | livrée en v1.0.0 |
 
 ## 6. Exigences non fonctionnelles
 
@@ -78,7 +78,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-08 | Cylindre Ø 50 à 24 segments → `15;36s` : Ø 15 et 36 segments, cercles natifs ; un cylindre non reconstructible dans la sélection → rien n'est modifié, message avec la raison | EF-12 |
 | CA-06 | Batterie verte sous 2021 Pro et Make 2017 | NF-04, NF-06 |
 
-Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 à C7, M1 à M6, F1 à F3, K1, K2, D1), CA-02 (R1), CA-03 (R5, E1 à E8), CA-04 et CA-07 (P1, 92 cas avec le vrai `to_l`), CA-06 (2021 Pro 42/42, Make 2017 40/40 avec C7 et R7 sautés : SketchUp 2020.1+), CA-08 (S5, R5, R8 à R10). CA-05 vérifié hors SketchUp à l'étape 1 (13 cas, script de l'essai non conservé) : pas encore dans la batterie.
+Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 à C7, M1 à M6, F1 à F3, K1, K2, D1), CA-02 (R1), CA-03 (R5, E1 à E8), CA-04 et CA-07 (P1, 92 cas avec le vrai `to_l`), CA-06 (2021 Pro 42/42, Make 2017 40/40 avec C7 et R7 sautés : SketchUp 2020.1+), CA-08 (S5, R5, R8 à R10). CA-05 (D3, 6 contrôles : anciennes sections lues, priorités, écriture dans CircleMaster seulement). Batterie de livraison : 2021 Pro 43/43, Make 2017 41/41 (C7 et R7 sautés).
 
 ## 9. Questions ouvertes et décisions
 
@@ -115,4 +115,4 @@ Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 �
 
 | Date | Version / commit | Exigences livrées |
 |---|---|---|
-| — | — | — |
+| 2026-10-26 | 1.0.0 (tag `v1.0.0`, dépôt privé) | EF-01 à EF-12, NF-01 à NF-06 ; batterie 2021 Pro et Make 2017 |

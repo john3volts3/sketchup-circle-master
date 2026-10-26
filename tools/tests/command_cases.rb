@@ -1017,5 +1017,43 @@ module CircleMasterTests
       items = toolbar.respond_to?(:count) ? toolbar.count : nil
       c.check(items.nil? || items >= 4, 'toolbar Circle Master with its buttons', items.inspect)
     end
+
+    # D3 (CA-05): settings of the former plugins read until they are changed
+    # in Circle Master. The preferences are replaced by a table for the test
+    # (nothing read from or written to the disk).
+    test 'D3 Former settings: Circle Advanced, Cylinder Resize, then Circle Master' do |c, _model|
+      settings = CircleMaster::Settings
+      su = Sketchup.singleton_class
+      su.send(:alias_method, :cm_tests_read_default, :read_default) unless su.method_defined?(:cm_tests_read_default)
+      prefs = {}
+      Sketchup.define_singleton_method(:read_default) do |section, key, default = nil|
+        prefs.key?([section, key]) ? prefs[[section, key]] : default
+      end
+      read = lambda do |table|
+        prefs.replace(table)
+        SETTINGS_IVARS.each { |v| settings.instance_variable_set(v, nil) }
+        [settings.segments, settings.input_mode, settings.coord_mode]
+      end
+      begin
+        [[{}, [48, 'diameter', 'auto'], 'nothing saved: defaults'],
+         [{ %w[CircleAdvanced segments] => 64, %w[CircleAdvanced input_mode] => 'radius',
+            %w[CircleAdvanced coord_mode] => 'local' }, [64, 'radius', 'local'], 'Circle Advanced settings'],
+         [{ %w[CylinderResize mode] => 'Radius' }, [48, 'radius', 'auto'], 'Cylinder Resize mode'],
+         [{ %w[CircleAdvanced input_mode] => 'diameter', %w[CylinderResize mode] => 'Radius' },
+          [48, 'diameter', 'auto'], 'both: Circle Advanced wins'],
+         [{ %w[CircleMaster segments] => 24, %w[CircleAdvanced segments] => 64 }, [24, 'diameter', 'auto'],
+          'Circle Master wins over Circle Advanced']].each do |table, want, label|
+          got = read.call(table)
+          c.check(got == want, "#{label}: #{want.inspect}", got.inspect)
+        end
+        read.call(%w[CircleAdvanced segments] => 64)
+        writes = tests.writes.length
+        settings.segments = 36
+        c.check(tests.writes[writes..-1] == ['CircleMaster/segments'] && prefs[%w[CircleAdvanced segments]] == 64,
+                'a change is written to CircleMaster only (intercepted), Circle Advanced untouched')
+      ensure
+        su.send(:alias_method, :read_default, :cm_tests_read_default)
+      end
+    end
   end
 end
