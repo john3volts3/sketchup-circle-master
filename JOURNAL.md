@@ -60,4 +60,11 @@
 - **circle_master/settings_dialog.rb** — *OK* rafraîchit aussi Cylinder Resize Tool s'il est actif.
 - **FSD.md** — Section « Redimensionnement des cylindres » (différences avec Cylinder Resize), interface, structure.
 - Vérifications : `ruby -wc` sur tous les fichiers ; plus aucune référence à `CylinderResize` hors reprise des réglages ; `diff` de chaque fichier repris et de `resize_selection` contre l'original = changements listés seulement ; 87/87 cas ; déployé dans SketchUp 2021 et 2017.
-- Test utilisateur OK dans SketchUp 2021 (fenêtre, incrément, annulation, outil, rayon, `--1`, refus des segments, trou dans un bloc, mode rayon).
+- Test utilisateur OK dans SketchUp 2021 (fenêtre, incrément, annulation, outil, rayon, `--1`, refus des segments, trou dans un bloc, mode rayon) ; commit `609bf7c`.
+
+### Fenêtre Settings trop petite
+
+- **Demande utilisateur** : la fenêtre est trop basse, les boutons ne se voient pas ; la rendre redimensionnable et garder sa taille pour les sessions suivantes.
+- **circle_master/settings_dialog.rb** — `resizable: true`, `scrollable: true`, hauteur par défaut 480 → 560, minimum 320 × 400 (`min_width`, `min_height`) ; suppression du `set_size` qui imposait 360 × 480 à chaque ouverture et écrasait la taille mémorisée par SketchUp sous `preferences_key`.
+- Constat (lecture seule de `PrivatePreferences.json`) : SketchUp 2021 avait déjà mémorisé 360 × 480 sous `WebCommonDialog_CircleMaster_Settings` ; sur ce PC, la première ouverture reste donc à 480 jusqu'au premier agrandissement.
+- **FSD.md** — Ligne « Fenêtre Settings » des différences avec Circle Advanced.

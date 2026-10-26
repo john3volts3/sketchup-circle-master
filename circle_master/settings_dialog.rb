@@ -14,22 +14,25 @@ module CircleMaster
       @dialog.show
     end
 
-    WIDTH  = 360
-    HEIGHT = 480
+    # Size at the first opening; afterwards SketchUp restores the size and
+    # position remembered under preferences_key (resizable dialog).
+    WIDTH      = 360
+    HEIGHT     = 560
+    MIN_WIDTH  = 320
+    MIN_HEIGHT = 400
 
     def self.create_dialog
       dlg = UI::HtmlDialog.new(
         dialog_title: "#{PLUGIN_NAME} — Settings",
         preferences_key: 'CircleMaster_Settings',
-        scrollable: false,
-        resizable: false,
+        scrollable: true,
+        resizable: true,
         width: WIDTH,
         height: HEIGHT,
+        min_width: MIN_WIDTH,
+        min_height: MIN_HEIGHT,
         style: UI::HtmlDialog::STYLE_DIALOG
       )
-      # The size remembered under preferences_key may predate the Advanced
-      # section: force the current size.
-      dlg.set_size(WIDTH, HEIGHT)
       dlg.set_file(File.join(PLUGIN_DIR, 'html', 'settings.html'))
 
       dlg.add_action_callback('ready') do |_ctx|

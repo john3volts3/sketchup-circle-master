@@ -19,7 +19,7 @@ Différences avec Circle Advanced :
 |---|---|---|
 | Noms dans *Édition > Annuler* | `Circle`, `Resize Circle`, `Modify Circle`, `Circle Segments` | `Circle Master — Circle`, `Circle Master — Resize Circle`, etc. (décision du 2026-10-26) |
 | Rayon d'une saisie, incrément | méthodes privées de `CircleTool` | `VcbParser.radius_from`, `VcbParser.target_radius` (mêmes calculs, même refus d'une taille ≤ 0) |
-| Fenêtre Settings | titre « Circle Advanced », position mémorisée sous `CircleAdvanced_Settings` | titre « Circle Master », `CircleMaster_Settings` ; légende « Value typed without marker (all commands) » |
+| Fenêtre Settings | titre « Circle Advanced », position mémorisée sous `CircleAdvanced_Settings` ; taille fixe 360 × 480 imposée à chaque ouverture | titre « Circle Master », `CircleMaster_Settings` ; légende « Value typed without marker (all commands) » ; **redimensionnable**, 360 × 560 à la première ouverture, minimum 320 × 400, défilement si trop petite ; SketchUp mémorise taille et position entre les sessions |
 | Réglages | section `CircleAdvanced` | section `CircleMaster`, reprise des anciens (ci-dessous) |
 
 ## Redimensionnement des cylindres (EF-02 à EF-06)
