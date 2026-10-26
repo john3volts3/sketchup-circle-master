@@ -1,0 +1,14 @@
+# Windows
+Thumbs.db
+
+# SketchUp auto-backups
+*.skb
+
+# Build output (.rbz)
+build/
+
+# Test reports (tools/tests)
+tools/tests/results/
+
+# Personal test models of the user
+mes tests/
