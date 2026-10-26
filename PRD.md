@@ -2,7 +2,7 @@
 
 > Le *quoi* et le *pourquoi*. Le *comment* sera dans `FSD.md`. Directives de construction : `DIRECTIVES_BUNDLE.md`.
 
-Dernière mise à jour : 2026-10-26 (création).
+Dernière mise à jour : 2026-10-26 (squelette : Q-2, Q-3 et décisions).
 
 ## 1. Contexte et problème
 
@@ -81,8 +81,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | # | Question | À traiter |
 |---|---|---|
 | Q-1 | Unifier le redimensionnement (un seul outil qui choisit selon la sélection : cercle, arc ou paroi de cylindre) ? | Après la 1.0.0 |
-| Q-2 | Moteur de reconstruction unique : `volume.rb` (Circle Advanced) ou `rebuilder.rb` (Cylinder Resize) ? | Comparaison sur la même géométrie (étape 5 des directives) |
-| Q-3 | Accélération de `repair_holes` (`OPTIMISATION_REPAIR_HOLES.md`) en 1.0.0 ou 1.1 ? | Après validation par comparaison |
+| Q-2 | Moteur de reconstruction unique, à partir de trois versions : `volume.rb` de Circle Advanced (change les segments), `rebuilder.rb` de Cylinder Resize (change le rayon), `circle_restore/volume.rb` de Solid Progress ; le moteur unique prend le rayon et le nombre de segments | Comparaison des trois sur la même géométrie (étape 5 des directives) |
+| Q-3 | Accélération de `repair_holes` (`OPTIMISATION_REPAIR_HOLES.md`) en 1.0.0 ou 1.1 ? Déjà présente dans la version de Solid Progress | Après validation par comparaison (avec Q-2) |
 | Q-4 | Raccourci clavier recommandé (C pour Circle, comme Circle Advanced) | Manuel |
 
 ### Décisions
@@ -92,6 +92,9 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-26 | Publication | Publier Circle Advanced et Cylinder Resize, réunis (évaluation : `../sketchup-publication/EVALUATION.md`) |
 | 2026-10-26 | Nom | **Circle Master** (« Advanced Circles » écarté : trop proche de « Circle Advanced ») ; aucune extension de ce nom trouvée |
 | 2026-10-26 | Positionnement | Gratuit (MIT) ; pas de commande autonome de réparation des cercles (plugins payants équivalents) |
+| 2026-10-26 | Moteur de reconstruction | Comparer les trois versions (Circle Advanced, Cylinder Resize, Solid Progress) avant d'en garder une seule (Q-2) |
+| 2026-10-26 | Anciens plugins pendant la construction | Laissés installés (SketchUp 2017 et 2021) : menus en double acceptés, pas de conflit Ruby (modules distincts) ; les tests ne vérifient que Circle Master |
+| 2026-10-26 | Reprise de `input_mode` | Lu dans `CircleMaster`, sinon `CircleAdvanced/input_mode`, sinon `CylinderResize/mode` : Circle Advanced l'emporte si les deux anciens diffèrent |
 
 ## 10. Historique des livraisons
 
