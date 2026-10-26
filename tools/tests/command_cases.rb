@@ -759,6 +759,12 @@ module CircleMasterTests
       c.check(got == [[[10.1, 24]], [[10.1, 24]]], '+0,2: radius 10,1 mm, native circles', got.inspect)
       c.check(tests.up_faces_at(model.entities, tests.pt(o.x + 5.mm, o.y + 5.mm, 0), 20.mm).length == 1,
               'top face: one face')
+      model.select_tool(nil)
+      tests.select(model, tests.walls_at(model.entities, center, 10.1.mm))
+      tool = tests.resize_tool(model)
+      tool.onUserText('48s', tests.view)
+      got = tests.circles_at(model.entities, center, top)
+      c.check(got == [[[10.1, 48]], [[10.1, 48]]], '48s: 48 segments, same size (EF-12)', got.inspect)
     end
 
     test 'R6 Circle not rebuildable (line attached): exact size, welded in 2020.1+' do |c, model|
@@ -772,7 +778,7 @@ module CircleMasterTests
       model.entities.add_line(corner.position, corner.position.offset(out, 5.mm))
       cylinders, _rejected = CircleMaster::Detector.from_faces(wall)
       next c.check(false, 'cylinder detected') if cylinders.empty?
-      change = CircleMaster::VcbParser.parse_size('22')
+      change = CircleMaster::VcbParser.parse('22')
       _count, native, welded = CircleMaster::Resizer.resize(cylinders, change)
       wall = tests.walls_at(model.entities, base, 11.mm)
       c.check(native.zero?, 'not rebuilt (line attached to an end circle)')
@@ -812,6 +818,90 @@ module CircleMasterTests
       got = tests.circles_at(defn.entities, ORIGIN, tests.pt(0, 0, 20.mm))
       c.check(got == [[[12.0, 24]], [[12.0, 24]]], 'definition: radius 12 mm, native', got.inspect)
       c.check(second.definition == defn && first.definition == defn, 'both instances share the resized definition')
+    end
+
+    # --- Segment count in the cylinder commands (EF-12) -----------------------
+
+    test 'R8 Segments in Cylinder Resize Tool: Measurements box, 15;36s, +0,2;48s, several, cone' do |c, model|
+      a = tests.slot(35)
+      b = a.offset(X_AXIS, 200.mm)
+      [a, b].each { |p| tests.add_cylinder(model.entities, p, Z_AXIS, 25.mm, 20.mm, 24) }
+      top_a = tests.pt(a.x, a.y, 20.mm)
+      top_b = tests.pt(b.x, b.y, 20.mm)
+      tests.select(model, tests.walls_at(model.entities, a, 25.mm))
+      tool = tests.resize_tool(model)
+      v = tests.view
+      shown = "#{Sketchup.format_length(50.mm)}; 24s"
+      c.check(tests.vcb[:label] == 'Diameter; Segments' && tests.vcb[:value] == shown,
+              "Measurements box: Diameter; Segments = #{shown}", tests.vcb.inspect)
+      [[shown, 25.0, 24, 'the value shown, typed again: unchanged'], ['15;36s', 7.5, 36, '15;36s'],
+       ['+0,2;48s', 7.6, 48, '+0,2;48s']].each do |text, r, n, label|
+        tool.onUserText(text, v)
+        got = tests.circles_at(model.entities, a, top_a)
+        c.check(got == [[[r, n]], [[r, n]]], "#{label}: radius #{r} mm, #{n} segments", got.inspect)
+      end
+      model.select_tool(nil)
+      tests.select(model, tests.walls_at(model.entities, a, 7.6.mm) + tests.walls_at(model.entities, b, 25.mm))
+      tool = tests.resize_tool(model)
+      tool.onUserText('30s', v)
+      got = tests.circles_at(model.entities, a, top_a, b, top_b)
+      c.check(got == [[[7.6, 30]], [[7.6, 30]], [[25.0, 30]], [[25.0, 30]]], 'two cylinders, 30s: both 30 segments',
+              got.inspect)
+      model.select_tool(nil)
+      cone = a.offset(X_AXIS, 400.mm)
+      cone_top = tests.pt(cone.x, cone.y, 30.mm)
+      tests.add_cone(model.entities, cone, 15.mm, 7.mm, 30.mm)
+      tests.select(model, tests.walls_at(model.entities, cone, 15.mm))
+      tool = tests.resize_tool(model)
+      questions = tests.messages.length
+      tool.onUserText('48s', v)
+      got = tests.circles_at(model.entities, cone, cone_top)
+      c.check(got == [[[15.0, 48]], [[7.0, 48]]], 'cone, 48s: stays a cone, 48 segments', got.inspect)
+      c.check(tests.messages.length == questions, 'no question asked (segments only)')
+    end
+
+    test 'R9 Segments refused when a cylinder cannot be rebuilt: nothing changed; size alone works' do |c, model|
+      base = tests.slot(36)
+      other = base.offset(X_AXIS, 200.mm)
+      [base, other].each { |p| tests.add_cylinder(model.entities, p, Z_AXIS, 10.mm, 20.mm, 24) }
+      top = tests.pt(base.x, base.y, 20.mm)
+      top_other = tests.pt(other.x, other.y, 20.mm)
+      wall = tests.walls_at(model.entities, base, 10.mm)
+      corner = wall.flat_map(&:vertices).find { |vx| (vx.position.z.to_f - top.z.to_f).abs < 1e-6 }
+      out = base.vector_to(tests.pt(corner.position.x, corner.position.y, 0))
+      model.entities.add_line(corner.position, corner.position.offset(out, 5.mm))
+      tests.select(model, wall + tests.walls_at(model.entities, other, 10.mm))
+      tool = tests.resize_tool(model)
+      tests.status.clear
+      tool.onUserText('36s', tests.view)
+      c.check(tests.status.any? { |s| s.include?('The segment count cannot be changed') },
+              'message with the reason', tests.status.last.inspect)
+      got = tests.circles_at(model.entities, base, top, other, top_other)
+      c.check(got == [[[10.0, 24]]] * 4, 'nothing changed (neither cylinder)', got.inspect)
+      tool.onUserText('22', tests.view)
+      got = tests.circles_at(model.entities, base, top, other, top_other)
+      c.check(got == [[[11.0, 24]]] * 4, 'size alone (22): both resized', got.inspect)
+    end
+
+    test 'R10 Resize Cylinders dialog: 36s, then 12;36s; one undo step' do |c, model|
+      base = tests.slot(37)
+      top = tests.pt(base.x, base.y, 20.mm)
+      tests.add_cylinder(model.entities, base, Z_AXIS, 25.mm, 20.mm, 24)
+      tests.select(model, tests.walls_at(model.entities, base, 25.mm))
+      tests.inputs << %w[Diameter 36s]
+      CircleMaster.resize_selection
+      got = tests.circles_at(model.entities, base, top)
+      c.check(got == [[[25.0, 36]], [[25.0, 36]]], '36s: 36 segments', got.inspect)
+      tests.select(model, tests.walls_at(model.entities, base, 25.mm))
+      tests.inputs << %w[Diameter 12;36s]
+      CircleMaster.resize_selection
+      got = tests.circles_at(model.entities, base, top)
+      c.check(got == [[[6.0, 36]], [[6.0, 36]]], '12;36s: diameter 12, 36 segments', got.inspect)
+      c.later do
+        Sketchup.undo
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[25.0, 36]], [[25.0, 36]]], 'one undo step: back to diameter 50, 36 segments', got.inspect)
+      end
     end
 
     # --- Robustness -------------------------------------------------------------

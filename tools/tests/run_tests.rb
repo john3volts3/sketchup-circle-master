@@ -588,7 +588,9 @@ module CircleMasterTests
     end
 
     # S5: segment input refused by the cylinder resizing, nothing changed.
-    test 'S5 Cylinder Resize Tool: 24s refused' do |c, model|
+    # S5: segment count in Cylinder Resize Tool (EF-12; refused by Cylinder
+    # Resize 0.3.0).
+    test 'S5 Cylinder Resize Tool: 36s changes the segment count' do |c, model|
       base = tests.slot(5)
       tests.add_cylinder(model.entities, base, Z_AXIS, 25.mm, 20.mm, 24)
       wall = tests.walls_at(model.entities, base, 25.mm)
@@ -596,13 +598,11 @@ module CircleMasterTests
       model.selection.add(wall)
       tool = CircleMaster::ResizeTool.new
       model.select_tool(tool)
-      tests.status.clear
-      tool.onUserText('24s', model.active_view)
-      c.check(tests.status.any? { |s| s.include?('Changing the segment count is not supported') },
-              'message in the status bar', tests.status.last.inspect)
-      arcs = tests.arcs_at(model.entities, base)
-      c.check(arcs.length == 1 && arcs.first.count_edges == 24 && (arcs.first.radius - 25.mm).abs < 1e-6,
-              'cylinder unchanged')
+      tool.onUserText('36s', model.active_view)
+      top = tests.pt(base.x, base.y, 20.mm)
+      ends = [base, top].map { |p| tests.arcs_at(model.entities, p) }
+      c.check(ends.all? { |a| a.length == 1 && a.first.count_edges == 36 && (a.first.radius - 25.mm).abs < 1e-6 },
+              'both ends: native, 36 segments, same size', ends.map { |a| a.map(&:count_edges) }.inspect)
       model.select_tool(nil)
     end
 

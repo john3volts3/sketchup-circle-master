@@ -60,7 +60,7 @@ module CircleMaster
     begin
       # The mode is the common setting: the Circle tool follows it too.
       Settings.input_mode = input[0].to_s.downcase unless input[0] == mode
-      change = VcbParser.parse_size(input[1].to_s)
+      change = VcbParser.parse(input[1].to_s)
       return unless Resizer.confirm_cones(cylinders, change)
       count, native, welded = Resizer.resize(cylinders, change)
       status = "#{PLUGIN_NAME} — #{count} cylinder(s) resized: #{VcbParser.describe(change)}"
@@ -105,15 +105,16 @@ module CircleMaster
     cmd_dialog.large_icon = icon('resize_dialog_24.png')
     cmd_dialog.tooltip = 'Resize Cylinders…'
     cmd_dialog.status_bar_text =
-      'Resize the selected cylinders or cones: type a new diameter or radius, or +1 / -0.1.'
+      'Resize the selected cylinders or cones: type a new diameter or radius, +1 / -0.1, ' \
+      'or 36s (segments).'
 
     cmd_tool = UI::Command.new('Cylinder Resize Tool') { activate_resize_tool }
     cmd_tool.small_icon = icon('resize_tool_16.png')
     cmd_tool.large_icon = icon('resize_tool_24.png')
     cmd_tool.tooltip = 'Cylinder Resize Tool'
     cmd_tool.status_bar_text =
-      'Click a cylinder wall, then type a new size (d15 = diameter, r7.5 = radius) ' \
-      'or +1 / -0.1 (increment).'
+      'Click a cylinder wall, then type a new size (d15 = diameter, r7.5 = radius), ' \
+      '+1 / -0.1 (increment) or 36s (segments).'
     cmd_tool.set_validation_proc { resize_tool_active? ? MF_CHECKED : MF_UNCHECKED }
 
     cmd_settings = UI::Command.new('Settings…') { show_settings }

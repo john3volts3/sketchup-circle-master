@@ -12,7 +12,7 @@
 #   +5, -2.5, +r1     increment of the size of an existing circle or cylinder
 #                     ("--5" = "+5", when "+" is taken by a shortcut)
 # Decimal point or comma, whatever the decimal separator of the PC.
-# The cylinder resizing takes a size only (parse_size): no segment count.
+# The cylinder resizing takes the same syntax: size and/or segment count.
 
 module CircleMaster
   module VcbParser
@@ -60,14 +60,6 @@ module CircleMaster
           result.bare_integer = token.to_i if sign.nil? && token =~ /\A\d+\z/
         end
       end
-      result
-    end
-
-    # Size input of the cylinder resizing (VCB of the tool, dialog value):
-    # as parse, without segment count.
-    def self.parse_size(text)
-      result = parse(text)
-      raise ArgumentError, 'Changing the segment count is not supported' if result.segments
       result
     end
 
@@ -129,11 +121,17 @@ module CircleMaster
       radius
     end
 
-    # Short text for the status bar: "Ø 15mm", "Ø +1mm", "R -0.1mm".
+    # Short text for the status bar: "Ø 15mm", "Ø +1mm", "R -0.1mm", "36s",
+    # "Ø 15mm; 36s".
     def self.describe(result)
-      prefix = radius?(result) ? 'R' : 'Ø'
-      sign = result.delta? ? (result.sign > 0 ? '+' : '-') : ''
-      "#{prefix} #{sign}#{Sketchup.format_length(result.length)}"
+      parts = []
+      if result.length
+        prefix = radius?(result) ? 'R' : 'Ø'
+        sign = result.delta? ? (result.sign > 0 ? '+' : '-') : ''
+        parts << "#{prefix} #{sign}#{Sketchup.format_length(result.length)}"
+      end
+      parts << "#{result.segments}s" if result.segments
+      parts.join('; ')
     end
   end
 end

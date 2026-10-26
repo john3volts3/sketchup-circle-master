@@ -35,6 +35,16 @@ module CircleMaster
       def valid?
         faces.all?(&:valid?) && loops.all? { |l| l.vertices.all?(&:valid?) }
       end
+
+      # Segment count of the first end circle: its ArcCurve's, else the
+      # number of polygon corners (split points left by a solid operation do
+      # not count).
+      def segments
+        loop = loops.first
+        return loop.arc.count_edges if loop.arc
+        chain = Chains.chain_from(loop.edges.first)
+        chain && chain.closed ? chain.runs.length : loop.edges.length
+      end
     end
 
     # Returns [cylinders, rejected] where rejected is a list of reasons.

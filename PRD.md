@@ -28,7 +28,7 @@ Toutes les fonctions de Circle Advanced 1.4.0 et de Cylinder Resize 0.3.0 (voir 
 
 - Commande autonome de réparation des cercles cassés (Curvizard, Eneroth Auto Weld : payants).
 - Cônes pointus, cylindres obliques, tubes et cylindres empilés au-delà de ce que font déjà les deux plugins.
-- Nouvelles fonctions en 1.0.0, sauf EF-11 (demandée par l'utilisateur le 2026-10-26).
+- Nouvelles fonctions en 1.0.0, sauf EF-11 et EF-12 (demandées par l'utilisateur le 2026-10-26).
 
 ## 5. Exigences fonctionnelles
 
@@ -46,6 +46,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-08 | **Un seul analyseur de saisie** accepté par l'outil Circle et par le redimensionnement des cylindres | Im | proposée |
 | EF-09 | **Un seul réglage diamètre / rayon** pour toutes les commandes | Im | proposée |
 | EF-10 | Réglages repris de Circle Advanced (`CircleAdvanced`) et de Cylinder Resize (`CylinderResize`) tant qu'ils ne sont pas changés dans Circle Master | Im | proposée |
+| EF-12 | **Nombre de segments dans les commandes de cylindres** (*Cylinder Resize Tool*, *Resize Cylinders…*) : `36s`, `15;36s`, `+0,2;48s` ; cylindre natif ou cassé reconstruit en natif, une étape d'annulation ; refus motivé sans rien modifier si un cylindre ne peut pas être reconstruit | Im | proposée |
 | EF-11 | **Point ou virgule décimale** dans toutes les saisies (zone Mesures, fenêtre *Resize Cylinders…*), quel que soit le séparateur décimal du PC (`7.5` et `7,5`) | Im | proposée |
 
 ## 6. Exigences non fonctionnelles
@@ -74,9 +75,10 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-04 | Tous les cas de saisie des deux plugins d'origine acceptés par l'analyseur unique | EF-08 |
 | CA-05 | Réglages des anciens plugins repris au premier lancement | EF-10 |
 | CA-07 | `7.5` et `7,5` acceptés et égaux, sur un PC à virgule et sur un PC à point (cas de l'analyseur avec le vrai `to_l`) | EF-11 |
+| CA-08 | Cylindre Ø 50 à 24 segments → `15;36s` : Ø 15 et 36 segments, cercles natifs ; un cylindre non reconstructible dans la sélection → rien n'est modifié, message avec la raison | EF-12 |
 | CA-06 | Batterie verte sous 2021 Pro et Make 2017 | NF-04, NF-06 |
 
-Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 à C7, M1 à M6, F1 à F3, K1, K2, D1), CA-02 (R1), CA-03 (R5, E1 à E8), CA-04 et CA-07 (P1, 92 cas avec le vrai `to_l`), CA-06 (2021 Pro 39/39, Make 2017 37/37 avec C7 et R7 sautés : SketchUp 2020.1+). CA-05 vérifié hors SketchUp à l'étape 1 (13 cas, script de l'essai non conservé) : pas encore dans la batterie.
+Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 à C7, M1 à M6, F1 à F3, K1, K2, D1), CA-02 (R1), CA-03 (R5, E1 à E8), CA-04 et CA-07 (P1, 92 cas avec le vrai `to_l`), CA-06 (2021 Pro 42/42, Make 2017 40/40 avec C7 et R7 sautés : SketchUp 2020.1+), CA-08 (S5, R5, R8 à R10). CA-05 vérifié hors SketchUp à l'étape 1 (13 cas, script de l'essai non conservé) : pas encore dans la batterie.
 
 ## 9. Questions ouvertes et décisions
 
@@ -100,6 +102,7 @@ Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 �
 | 2026-10-26 | Moteur unique (Q-2, Q-3) | Moteur de Solid Progress (`volume.rb` + détection par chaînes `chains.rb`, réparation des trous par grilles) avec `radii:` et `segments:` ; `cylinders/rebuilder.rb` et l'ancien `volume.rb` retirés. Vérifié face aux trois moteurs d'origine installés (2021 Pro, Make 2017) : 27 comparaisons sur 28 identiques, la 28e est un cercle à point de coupe que l'ancien Cylinder Resize ne reconnaissait pas |
 | 2026-10-26 | Batterie complète (étape 6) | Entièrement automatique (demande de l'utilisateur) : souris et clavier simulés, fenêtres pilotées, préférences interceptées ; seul geste : le clic sur l'écran d'accueil de Make 2017 |
 | 2026-10-26 | Défauts trouvés par la batterie | Corrigés en 1.0.0 : seuil d'alignement de `Chains` rendu relatif (très petits cercles cassés) ; coin arrondi extérieur à plus de segments (`fillet.rb` : lignes provisoires vers un point de la bissectrice, face cherchée au segment du milieu), défaut hérité de Circle Advanced 1.4.0 |
+| 2026-10-26 | Segments dans les commandes de cylindres (EF-12) | Ajoutés en 1.0.0 (choix A de l'utilisateur), exception à « rien de nouveau en 1.0.0 » ; refusés par Cylinder Resize 0.3.0 (« phase 2 » jamais faite) ; un nombre égal à l'actuel ne reconstruit pas |
 | 2026-10-26 | Détecteur des cylindres | Cercle cassé : détection par chaîne d'abord, moyenne des sommets en secours (aucun cylindre reconnu avant n'est perdu) |
 | 2026-10-26 | Anciens plugins pendant la construction | Laissés installés (SketchUp 2017 et 2021) : menus en double acceptés, pas de conflit Ruby (modules distincts) ; les tests ne vérifient que Circle Master |
 | 2026-10-26 | Noms dans *Annuler* | Préfixe du nom affiché (directive § 1, comme Solid Progress) : *Circle Master — Circle*, *Circle Master — Resize Circle*… |

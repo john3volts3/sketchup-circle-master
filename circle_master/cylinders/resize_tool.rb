@@ -2,7 +2,8 @@
 # Interactive tool: hover highlights a cylinder, click picks it (Shift or
 # Ctrl click adds/removes), then type the new size in the Measurements box:
 #   d15 = diameter, r7.5 = radius, +1 / -0.1 = increment; a value without
-#   marker (15) follows the common input mode (Settings).
+#   marker (15) follows the common input mode (Settings); 36s = segment
+#   count, 15;36s = both (Circle Master).
 # The tool stays active; typing again re-applies to the same cylinders.
 # Truncated cones are shown in another color: an absolute value turns them
 # into cylinders (after confirmation), an increment keeps them cones.
@@ -94,7 +95,7 @@ module CircleMaster
         return
       end
       begin
-        change = VcbParser.parse_size(text)
+        change = VcbParser.parse(text)
         return unless Resizer.confirm_cones(@targets, change)
         count, native, welded, anchors = Resizer.resize(@targets, change)
         # SketchUp recreated the faces (rebuilt cylinders have new vertices):
@@ -188,14 +189,17 @@ module CircleMaster
       "Cone Ø #{Sketchup.format_length(big * 2.0)} / Ø #{Sketchup.format_length(small * 2.0)}"
     end
 
-    # Shows the size in the common input mode, so that typing the value
-    # shown again changes nothing.
+    # Shows the size in the common input mode and the segment count, in the
+    # input syntax ("50mm; 24s"), so that typing the value shown again
+    # changes nothing.
     def update_vcb
       diameter = Settings.diameter_mode?
-      Sketchup.vcb_label = diameter ? 'Diameter' : 'Radius'
+      Sketchup.vcb_label = "#{diameter ? 'Diameter' : 'Radius'}; Segments"
       Sketchup.vcb_value =
         if @targets.empty? then ''
-        else Sketchup.format_length(diameter ? @targets.first.radius * 2.0 : @targets.first.radius)
+        else
+          cyl = @targets.first
+          "#{Sketchup.format_length(diameter ? cyl.radius * 2.0 : cyl.radius)}; #{cyl.segments}s"
         end
     end
 
@@ -208,7 +212,7 @@ module CircleMaster
           cones = @targets.count(&:cone?)
           syntax = Settings.diameter_mode? ? '15 or d15 = diameter, r7.5 = radius' : '7.5 or r7.5 = radius, d15 = diameter'
           text = "#{PLUGIN_NAME} — #{@targets.length} cylinder(s). Type #{syntax}, " \
-                 '+1 (or --1) / -0.1 = increment, then Enter.'
+                 '+1 (or --1) / -0.1 = increment, 36s = segments, 15;36s, then Enter.'
           if cones > 0
             text += " WARNING: #{cones} cone(s) — a value makes them cylinders, " \
                     'an increment keeps them cones.'

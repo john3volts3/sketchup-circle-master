@@ -152,17 +152,6 @@ module CircleMasterTests
       ['--48s', 'The segment count cannot be an increment']
     ].freeze
 
-    # parse_size: [input, expected fields] or [input, error message]
-    SIZE = [
-      ['15',     length: 15, kind: :default, bare_integer: 15],
-      ['r7.5',   length: 7.5, kind: :radius],
-      ['+1',     length: 1, kind: :default, sign: 1],
-      ['24s',    'Changing the segment count is not supported'],
-      ['s24',    'Changing the segment count is not supported'],
-      ['15;24s', 'Changing the segment count is not supported'],
-      ['',       'Empty input']
-    ].freeze
-
     # [input, input mode, radius in mm (nil: no length)]
     RADIUS = [
       ['15',   D, 7.5],
@@ -191,14 +180,18 @@ module CircleMasterTests
       ['-r6',  D, 5, 'The resulting size would be zero or negative']
     ].freeze
 
-    # [input, input mode, prefix, sign, length in mm]
+    # [input, input mode, prefix (nil: no length), sign, length in mm,
+    # segment count]
     DESCRIBE = [
-      ['15',    D, 'Ø', '',  15],
-      ['15',    R, 'R', '',  15],
-      ['d15',   R, 'Ø', '',  15],
-      ['+1',    D, 'Ø', '+', 1],
-      ['-0.1r', D, 'R', '-', 0.1],
-      ['--r1',  D, 'R', '+', 1]
+      ['15',       D, 'Ø', '',  15],
+      ['15',       R, 'R', '',  15],
+      ['d15',      R, 'Ø', '',  15],
+      ['+1',       D, 'Ø', '+', 1],
+      ['-0.1r',    D, 'R', '-', 0.1],
+      ['--r1',     D, 'R', '+', 1],
+      ['36s',      D, nil, '',  nil, 36],
+      ['15;36s',   D, 'Ø', '',  15, 36],
+      ['+0,2;48s', D, 'Ø', '+', 0.2, 48]
     ].freeze
 
     def self.parser
@@ -273,15 +266,6 @@ module CircleMasterTests
         err = error_of { parser.parse(input) }
         check.call("parse #{input.inspect} refused", err == msg ? nil : "got #{err.inspect}")
       end
-      SIZE.each do |input, want|
-        res = nil
-        err = error_of { res = parser.parse_size(input) }
-        if want.is_a?(String)
-          check.call("parse_size #{input.inspect} refused", err == want ? nil : "got #{err.inspect}")
-        else
-          check.call("parse_size #{input.inspect}", err ? "error #{err}" : field_errors(res, want))
-        end
-      end
       RADIUS.each do |input, mode, want|
         got = nil
         err = with_mode(mode) { error_of { got = parser.radius_from(parser.parse(input)) } }
@@ -305,8 +289,9 @@ module CircleMasterTests
           check.call(name, ok ? nil : "got #{got && (got / MM).round(6)} mm")
         end
       end
-      DESCRIBE.each do |input, mode, prefix, sign, mm|
-        want = "#{prefix} #{sign}#{Sketchup.format_length(mm * MM)}"
+      DESCRIBE.each do |input, mode, prefix, sign, mm, segments|
+        size = prefix ? "#{prefix} #{sign}#{Sketchup.format_length(mm * MM)}" : nil
+        want = [size, segments ? "#{segments}s" : nil].compact.join('; ')
         got = nil
         err = with_mode(mode) { error_of { got = parser.describe(parser.parse(input)) } }
         name = "describe #{input.inspect} (#{mode})"

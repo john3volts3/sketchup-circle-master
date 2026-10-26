@@ -20,22 +20,39 @@
 # The target radius is computed per circle: an absolute value gives both ends
 # the same size (a cone becomes a cylinder), an increment is added to each end
 # (a cone stays a cone, with the same angle).
+#
+# A segment count (36s, 15;36s: Circle Master, EF-12) rebuilds each cylinder
+# whose count differs natively with that count (Volume), at its target size;
+# all of them are checked before anything is changed, and a cylinder that
+# cannot be rebuilt cancels the whole input with its reason.
 
 module CircleMaster
   module Resizer
     EPSILON = 1e-6 # inches
 
     # Resizes +cylinders+ as requested by +change+ (VcbParser::Result: value
-    # or increment) in one undoable operation. Nothing is changed if a
-    # circle would get a zero or negative radius.
+    # or increment, and/or segment count) in one undoable operation. Nothing
+    # is changed if a circle would get a zero or negative radius, or if the
+    # segment count of a cylinder cannot be changed.
     # Returns [cylinders resized, circles rebuilt as native, circles welded,
     # one vertex per resized cylinder (to find it again afterwards)].
     def self.resize(cylinders, change)
       plan = cylinders.map do |cyl|
-        cyl.loops.map { |loop| [loop, VcbParser.target_radius(change, loop.radius)] }
+        cyl.loops.map { |loop| [loop, VcbParser.target_radius(change, loop.radius) || loop.radius] }
       end
       if plan.flatten(1).any? { |_loop, radius| radius <= EPSILON }
         raise ArgumentError, 'The resulting size would be zero or negative'
+      end
+      n = change.segments
+      if n && !Settings.valid_segments?(n)
+        raise ArgumentError, "Segments: #{Settings::MIN_SEGMENTS} to #{Settings::MAX_SEGMENTS}"
+      end
+      # Cylinders whose segment count changes: checked before anything is done.
+      resegment = cylinders.map { |cyl| n && cyl.segments != n }
+      cylinders.each_with_index do |cyl, i|
+        next unless resegment[i]
+        _body, reason = rebuild_body(cyl)
+        raise ArgumentError, "The segment count cannot be changed (#{reason}), nothing was changed" if reason
       end
       model = Sketchup.active_model
       entities = model.active_entities
@@ -49,10 +66,11 @@ module CircleMaster
           Sketchup.status_text =
             "#{PLUGIN_NAME} — Cylinder #{i + 1}/#{cylinders.length}"
           broken = loops.count { |loop, _radius| loop.arc.nil? }
-          body, reason = broken > 0 ? rebuild_body(cylinders[i]) : [nil, nil]
+          body, reason = broken > 0 || resegment[i] ? rebuild_body(cylinders[i]) : [nil, nil]
+          raise reason if resegment[i] && !body # changed since the check: abort
           if body
             radii = body.loops.map { |bl| radius_at(loops, bl.center) }
-            anchors << Volume.rebuild(entities, body, radii: radii)
+            anchors << Volume.rebuild(entities, body, radii: radii, segments: resegment[i] ? n : nil)
             native += broken
           else
             puts "[#{PLUGIN_NAME}] Not rebuilt as native circles (#{reason}): welded" if reason
@@ -100,7 +118,7 @@ module CircleMaster
     # Asks before an absolute value turns cones into cylinders.
     # Returns true to go on.
     def self.confirm_cones(cylinders, change)
-      return true if change.delta?
+      return true if change.delta? || change.length.nil? # increment or segments only
       cones = cylinders.count(&:cone?)
       return true if cones.zero?
       msg = "#{PLUGIN_NAME} — #{cones} cone(s) will become cylinders " \

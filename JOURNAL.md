@@ -117,3 +117,15 @@
 - **Résultats** : SketchUp 2021 Pro 39/39 ; Make 2017 37/37 (C7, R7 sautés : SketchUp 2020.1+) ; comparaisons identiques sauf les deux cas où l'ancien plugin échouait.
 - **FSD.md** — Tests (cas, méthode, résultats, défauts corrigés, limite des arcs plus fins que la tolérance), différence « coin arrondi extérieur » avec Circle Advanced, test d'alignement relatif. **PRD.md** — Vérification des critères d'acceptation, décisions.
 - Test utilisateur OK dans SketchUp 2021 sur une vraie pièce (coin arrondi passé à plus de segments).
+
+### Segments dans les commandes de cylindres (EF-12)
+
+- **Demande utilisateur** : pouvoir changer le nombre de segments depuis les outils cylindres (refusé par Cylinder Resize 0.3.0) ; choix A : dans la 1.0.0.
+- **circle_master/vcb_parser.rb** — `parse_size` supprimé (les commandes de cylindres utilisent `parse`) ; `describe` affiche aussi les segments (`36s`, `Ø 15mm; 36s`).
+- **circle_master/cylinders/detector.rb** — `Cylinder#segments` : nombre de coins (ArcCurve, sinon chaîne, points de coupe exclus).
+- **circle_master/cylinders/resizer.rb** — Segment count : contrôle de tous les cylindres concernés avant l'opération (refus `The segment count cannot be changed (…), nothing was changed`), puis `Volume.rebuild(…, radii:, segments:)` ; nombre égal à l'actuel : pas de reconstruction ; saisie sans longueur : tailles gardées ; `confirm_cones` : pas de question sans longueur.
+- **circle_master/cylinders/resize_tool.rb** — `VcbParser.parse` ; zone Mesures « Diameter; Segments » / `50mm; 24s` ; aide « 36s = segments, 15;36s ». **circle_master/main.rb** — fenêtre : `parse` ; aides des deux boutons.
+- **Tests** — `vcb_parser_cases.rb` : table `parse_size` retirée, 3 cas `describe` avec segments (88 cas) ; `run_tests.rb` : S5 devient « 36s change les segments » ; `command_cases.rb` : R5 + `48s`, R8 (zone Mesures, `15;36s`, `+0,2;48s`, plusieurs, cône), R9 (refus motivé, taille seule), R10 (fenêtre, annulation) ; `parse_size` remplacé par `parse` (E10, R6).
+- **Résultats** : SketchUp 2021 Pro 42/42, Make 2017 40/40 (C7, R7 sautés) ; comparaisons inchangées.
+- **FSD.md** — Différences avec Cylinder Resize (segments, zone Mesures, aide), analyseur, tests. **PRD.md** — EF-12, CA-08, décision.
+- Test utilisateur OK dans SketchUp 2021 (48s, 20;36s, annulation, fenêtre).

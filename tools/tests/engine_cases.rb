@@ -414,7 +414,7 @@ module CircleMasterTests
       c.check(cylinders.length == 1 && cylinders.first.loops.all? { |l| l.arc.nil? }, 'broken cylinder detected',
               rejected.inspect)
       next if cylinders.empty?
-      change = CircleMaster::VcbParser.parse_size('52')
+      change = CircleMaster::VcbParser.parse('52')
       started = Time.now
       _count, native, welded = tests.with_mode('diameter') { CircleMaster::Resizer.resize(cylinders, change) }
       c.note(format('%.2fs', Time.now - started))
