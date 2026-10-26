@@ -49,4 +49,15 @@
 - **circle_master/main.rb** — `FILES` complet de Circle Advanced ; `Circle` active `CircleTool`, `Settings…` ouvre `SettingsDialog` ; `circle_tool_active?` et case cochée du bouton Circle.
 - **FSD.md** — Section « Outil Circle et fenêtre Settings » (différences avec Circle Advanced), structure. **PRD.md** — Décision des noms dans *Annuler*.
 - Vérifications : `ruby -wc` sur tous les fichiers ; plus aucune référence à `CircleAdvanced` hors reprise des réglages ; `diff` de chaque fichier repris contre l'original = changements listés seulement ; 87/87 cas de l'analyseur ; déployé dans SketchUp 2021 et 2017.
-- Test utilisateur OK dans SketchUp 2021 (tracé, saisies, modification, segments d'un cylindre, annulation, Settings) ; étapes 2 et 3 commitées ensemble.
+- Test utilisateur OK dans SketchUp 2021 (tracé, saisies, modification, segments d'un cylindre, annulation, Settings) ; étapes 2 et 3 commitées ensemble (`8e96112`).
+
+### Étape 4 des directives : commandes de Cylinder Resize
+
+- **circle_master/cylinders/detector.rb**, **rebuilder.rb** (repris de Cylinder Resize 0.3.0) — Nom du module seulement ; `rebuilder.rb` provisoire jusqu'au choix du moteur unique (étape 5).
+- **circle_master/cylinders/resizer.rb** (repris) — Module ; nom d'opération « Circle Master — Resize Cylinders ».
+- **circle_master/cylinders/resize_tool.rb** (repris) — Module ; `VcbParser.parse_size` ; zone Mesures « Diameter » / « Radius » et taille selon le réglage commun ; aide de la barre d'état selon le réglage.
+- **circle_master/main.rb** — `FILES` + 4 fichiers `cylinders/` ; `resize_selection` (fenêtre de Cylinder Resize : *Mode* lu dans le réglage commun et écrit seulement s'il change, `parse_size`) ; `activate_resize_tool`, `resize_tool_active?`, case cochée ; aide du bouton Cylinder Resize Tool ; `not_available` supprimé (plus utilisé).
+- **circle_master/settings_dialog.rb** — *OK* rafraîchit aussi Cylinder Resize Tool s'il est actif.
+- **FSD.md** — Section « Redimensionnement des cylindres » (différences avec Cylinder Resize), interface, structure.
+- Vérifications : `ruby -wc` sur tous les fichiers ; plus aucune référence à `CylinderResize` hors reprise des réglages ; `diff` de chaque fichier repris et de `resize_selection` contre l'original = changements listés seulement ; 87/87 cas ; déployé dans SketchUp 2021 et 2017.
+- Test utilisateur OK dans SketchUp 2021 (fenêtre, incrément, annulation, outil, rayon, `--1`, refus des segments, trou dans un bloc, mode rayon).

@@ -7,7 +7,7 @@ Rédigée pendant la construction du bundle, à partir des FSD des deux plugins 
 
 Plan prévu : objectif ; entrées (sélections, saisies de l'analyseur unique) ; outil Circle ; redimensionnement des cylindres ; moteur de reconstruction unique ; réglages et reprise des anciens ; interface (menu, barre d'outils, fenêtres) ; limitations ; structure des fichiers ; tests ; historique des versions.
 
-État : squelette, analyseur unique, outil Circle et réglages (étapes 1 à 3 des directives). `Resize Cylinders…` et `Cylinder Resize Tool` ne sont pas encore portés : elles affichent « `<commande>: not available yet` » dans la barre d'état et la console.
+État : les quatre commandes sont portées (étapes 1 à 4 des directives). Reste : moteur de reconstruction unique (étape 5), batterie (étape 6), documentation.
 
 ## Outil Circle et fenêtre Settings (EF-01)
 
@@ -21,6 +21,22 @@ Différences avec Circle Advanced :
 | Rayon d'une saisie, incrément | méthodes privées de `CircleTool` | `VcbParser.radius_from`, `VcbParser.target_radius` (mêmes calculs, même refus d'une taille ≤ 0) |
 | Fenêtre Settings | titre « Circle Advanced », position mémorisée sous `CircleAdvanced_Settings` | titre « Circle Master », `CircleMaster_Settings` ; légende « Value typed without marker (all commands) » |
 | Réglages | section `CircleAdvanced` | section `CircleMaster`, reprise des anciens (ci-dessous) |
+
+## Redimensionnement des cylindres (EF-02 à EF-06)
+
+Code de Cylinder Resize 0.3.0, comportement identique : voir `../sketchup-cylindrer-resize/FSD.md` (détection d'un cylindre ou tronc de cône par sa paroi, rayon cible par cercle, cônes, déplacement des sommets ou reconstruction native des cercles cassés, soudure en secours, faces hôtes, composants, interfaces, limitations) ; ce détail sera fusionné ici avec la documentation. Fichiers : `cylinders/detector.rb`, `cylinders/rebuilder.rb` (moteur provisoire, choix du moteur unique à l'étape 5), `cylinders/resizer.rb`, `cylinders/resize_tool.rb` ; fenêtre dans `main.rb` (`CircleMaster.resize_selection`).
+
+Différences avec Cylinder Resize :
+
+| Point | Cylinder Resize | Circle Master |
+|---|---|---|
+| Valeur sans marqueur dans *Cylinder Resize Tool* | toujours un diamètre | suit le réglage commun `input_mode` |
+| Zone Mesures de l'outil | toujours « Diameter » et le diamètre | « Diameter » ou « Radius » et la taille correspondante (revalider la valeur affichée ne change rien) |
+| Aide de la barre d'état de l'outil | « Type 15 or d15 = diameter, r7.5 = radius… » | idem en mode diamètre ; « Type 7.5 or r7.5 = radius, d15 = diameter… » en mode rayon |
+| Champ *Mode* de la fenêtre | réglage propre `CylinderResize/mode`, écrit à chaque validation | réglage commun `input_mode`, écrit seulement s'il change : l'outil Circle le suit aussi |
+| Analyse de la saisie | `VcbParser.parse(text, default_kind)` | `VcbParser.parse_size(text)` (segments refusés, même message) |
+| Nom dans *Annuler* | `Resize Cylinders` | `Circle Master — Resize Cylinders` |
+| Fenêtre Settings ouverte avec l'outil actif | — | *OK* rafraîchit la zone Mesures et l'aide de l'outil |
 
 ## Saisie : analyseur unique (EF-08)
 
@@ -76,7 +92,7 @@ Module `CircleMaster::Settings` (`circle_master/settings.rb`), section `CircleMa
 
 Menu *Extensions > Circle Master* et barre d'outils **Circle Master**, dans cet ordre :
 
-| Commande | Icône | Rôle (une fois porté) |
+| Commande | Icône | Rôle |
 |---|---|---|
 | `Circle` | `circle_16/24.png` | Outil Circle de Circle Advanced (EF-01) |
 | `Resize Cylinders…` | `resize_dialog_16/24.png` | Fenêtre de Cylinder Resize (EF-02) |
@@ -84,7 +100,7 @@ Menu *Extensions > Circle Master* et barre d'outils **Circle Master**, dans cet 
 | *(séparateur)* | | |
 | `Settings…` | `settings_16/24.png` | Fenêtre de réglages |
 
-Les curseurs `cursor_circle.png` et `cursor_resize.png` sont déjà copiés pour les outils. La garde `unless @loaded` évite les doublons au rechargement ; `CircleMaster.reload` recharge les fichiers de `FILES` (développement).
+Curseurs des outils : `cursor_circle.png`, `cursor_resize.png`. Les boutons `Circle` et `Cylinder Resize Tool` sont cochés quand leur outil est actif. La garde `unless @loaded` évite les doublons au rechargement ; `CircleMaster.reload` recharge les fichiers de `FILES` (développement).
 
 ## Structure des fichiers
 
@@ -101,6 +117,11 @@ circle_master/
   volume.rb                 # segments d'un cylindre ou tronc de cône (moteur provisoire)
   settings_dialog.rb        # fenêtre Settings
   html/settings.html
+  cylinders/                # Cylinder Resize
+    detector.rb             # détection d'un cylindre ou tronc de cône par sa paroi
+    rebuilder.rb            # reconstruction native à un nouveau rayon (moteur provisoire)
+    resizer.rb              # redimensionnement, une opération annulable
+    resize_tool.rb          # outil interactif
   icons/                    # icônes des deux plugins d'origine, noms inchangés
 tools/tests/
   vcb_parser_cases.rb       # cas de l'analyseur (hors SketchUp ou dans SketchUp)

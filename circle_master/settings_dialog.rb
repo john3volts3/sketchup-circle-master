@@ -75,7 +75,7 @@ module CircleMaster
     # Refreshes the VCB and the preview if the tool is active.
     def self.refresh_active_tool
       model = Sketchup.active_model
-      return unless CircleMaster.circle_tool_active?
+      return unless CircleMaster.circle_tool_active? || CircleMaster.resize_tool_active?
       model.tools.active_tool.resume(model.active_view)
     end
   end

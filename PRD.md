@@ -96,6 +96,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-26 | Anciens plugins pendant la construction | Laissés installés (SketchUp 2017 et 2021) : menus en double acceptés, pas de conflit Ruby (modules distincts) ; les tests ne vérifient que Circle Master |
 | 2026-10-26 | Noms dans *Annuler* | Préfixe du nom affiché (directive § 1, comme Solid Progress) : *Circle Master — Circle*, *Circle Master — Resize Circle*… |
 | 2026-10-26 | Cylinder Resize Tool et le réglage diamètre / rayon | L'outil suit le réglage commun (EF-09) : `15` est un rayon si `input_mode = radius` (dans Cylinder Resize 0.3.0, toujours un diamètre) |
+| 2026-10-26 | Champ *Mode* de la fenêtre Resize Cylinders | Lu dans le réglage commun et écrit s'il change : l'outil Circle suit le choix fait dans la fenêtre |
 | 2026-10-26 | Reprise de `input_mode` | Lu dans `CircleMaster`, sinon `CircleAdvanced/input_mode`, sinon `CylinderResize/mode` : Circle Advanced l'emporte si les deux anciens diffèrent |
 
 ## 10. Historique des livraisons
