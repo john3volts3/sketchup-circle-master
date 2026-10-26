@@ -54,7 +54,9 @@ Module `CircleMaster::VcbParser` (`circle_master/vcb_parser.rb`) : l'analyseur d
 | `~ 50mm` | `~ ` en tête ignoré (valeur approchée de `Sketchup.format_length`) |
 | `48` seul | `bare_integer = 48` (nombre de côtés avant le 1er clic, outil Circle) |
 
-Refus (`ArgumentError`, message affiché tel quel) : saisie vide (`Empty input`), valeur illisible (`Invalid value: abc`), valeur nulle (`Value must be positive: 0`), incrément de segments (`The segment count cannot be an increment`).
+**Séparateur décimal** (EF-11) : point ou virgule, quel que soit celui du PC. Avant `String#to_l`, qui n'accepte que le séparateur de Windows, `VcbParser.local_decimals` remplace tout point ou toute virgule collé à un chiffre par `Sketchup::RegionalSettings.decimal_separator` (présent sous Make 2017). Pas d'ambiguïté : les valeurs sont séparées par `;`. Limites : pas de séparateur de milliers (`1,000` = 1 sur un PC à point) ; le vrai `to_l` ignore une lettre finale après une décimale (`7,5x` est lu comme 7,5) ; les yards ne sont connus de `to_l` que depuis SketchUp 2020.
+
+Refus (`ArgumentError`, message affiché tel quel, avec le texte tapé) : saisie vide (`Empty input`), valeur illisible (`Invalid value: abc`), valeur nulle (`Value must be positive: 0`), incrément de segments (`The segment count cannot be an increment`).
 
 Fonctions :
 
@@ -69,10 +71,11 @@ Fonctions :
 Différences avec les analyseurs d'origine (pas de perte de fonction) :
 
 - `15;20` donne 20 (la dernière valeur l'emporte, comme dans Circle Advanced) ; Cylinder Resize la refusait.
+- Point et virgule décimale acceptés partout (les deux plugins n'acceptaient que le séparateur du PC).
 - `+24s` dans le redimensionnement des cylindres : `The segment count cannot be an increment` au lieu de `Changing the segment count is not supported`.
 - Le paramètre `default_kind` de Cylinder Resize disparaît : la fenêtre écrira son choix dans le réglage commun.
 
-Cas : `tools/tests/vcb_parser_cases.rb` (87 cas : saisies des deux plugins, refus, `parse_size`, `radius_from`, `target_radius`, `describe` en mode diamètre et rayon). Hors SketchUp : `ruby tools/tests/vcb_parser_cases.rb` (`Sketchup` et `String#to_l` simulés, modèle en mm). Dans SketchUp : `CircleMasterTests::VcbParserCases.run` avec le vrai `to_l` (modèle en mm) ; le mode de saisie n'est changé qu'en mémoire.
+Cas : `tools/tests/vcb_parser_cases.rb` (92 cas : saisies des deux plugins, refus, `parse_size`, `radius_from`, `target_radius`, `describe` en mode diamètre et rayon). Hors SketchUp : `ruby tools/tests/vcb_parser_cases.rb` (`Sketchup` et `String#to_l` simulés, modèle en mm ; `to_l` n'accepte que le séparateur simulé ; deux passages : PC à virgule, puis PC à point). Dans SketchUp : `CircleMasterTests::VcbParserCases.run` avec le vrai `to_l` (modèle en mm) ; le mode de saisie n'est changé qu'en mémoire.
 
 ## Réglages et reprise des anciens (EF-09, EF-10)
 
@@ -102,6 +105,16 @@ Menu *Extensions > Circle Master* et barre d'outils **Circle Master**, dans cet 
 
 Curseurs des outils : `cursor_circle.png`, `cursor_resize.png`. Les boutons `Circle` et `Cylinder Resize Tool` sont cochés quand leur outil est actif. La garde `unless @loaded` évite les doublons au rechargement ; `CircleMaster.reload` recharge les fichiers de `FILES` (développement).
 
+## Tests (NF-06)
+
+Batterie automatique sur le modèle de Solid Progress, hors `.rbz` :
+
+- `tools/tests/run_tests.ps1` (ASCII) : SketchUp fermé, il déploie le plugin (`circle_master.rb` + miroir `robocopy` de `circle_master/`), lance SketchUp avec `-RubyStartup tools/tests/run_tests.rb`, attend le rapport, ferme le seul SketchUp lancé et affiche le rapport. Options `-Versions 2021,2017`, `-Timeout`, `-NoDeploy`. SketchUp 2021 : écran d'accueil désactivé le temps du test (`PrivatePreferences.json` sauvegardé d'abord dans `%USERPROFILE%\claude-backups\…`, 5 copies gardées, fichier de plus de 20 Mo jamais touché) ; Make 2017 : cliquer sur le bouton de l'écran d'accueil.
+- `tools/tests/run_tests.rb` : nouveau modèle vide en millimètres, étapes chaînées par minuteur, boîtes de message et `write_default` interceptés (aucune préférence écrite), définitions inutilisées signalées, rapport `tools/tests/results/latest-<21|17>.txt` (ignoré par git).
+- Cas : P1 analyseur (`vcb_parser_cases.rb`, vrai `to_l` ; les yards sont sautés là où `to_l` ne les connaît pas, SketchUp 2017) ; S1 à S5 commandes (création d'un cercle, cercle sélectionné `+10` puis `36s`, segments d'un cylindre, Cylinder Resize Tool `52` / `--1` / annulation, refus de `24s`) ; E1 à E8 comparaison des moteurs (INFO, n'échouent jamais : même solide cassé, chaque moteur dans une opération annulée, signature de forme et temps ; booléens natifs en Pro, Solid for Maker en Make) ; E9 segments de Circle Advanced ; E10 rayon de Cylinder Resize ; Z1 aucune préférence écrite.
+
+Résultat du 2026-10-26 : 9/9 sous SketchUp 2021 Pro et sous Make 2017.
+
 ## Structure des fichiers
 
 ```
@@ -124,6 +137,9 @@ circle_master/
     resize_tool.rb          # outil interactif
   icons/                    # icônes des deux plugins d'origine, noms inchangés
 tools/tests/
+  run_tests.ps1             # lanceur (SketchUp 2021, Make 2017)
+  run_tests.rb              # batterie dans SketchUp
   vcb_parser_cases.rb       # cas de l'analyseur (hors SketchUp ou dans SketchUp)
+  engine_cases.rb           # comparaison des moteurs de reconstruction
 LICENSE                     # MIT
 ```

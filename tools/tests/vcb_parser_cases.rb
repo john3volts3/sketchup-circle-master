@@ -3,8 +3,10 @@
 # Circle Advanced and of Cylinder Resize, size helpers.
 #
 # Outside SketchUp: ruby tools/tests/vcb_parser_cases.rb
-#   Sketchup and String#to_l are simulated (model in millimetres, decimal
-#   point or comma); the plugin files are loaded from the repository.
+#   Sketchup and String#to_l are simulated (model in millimetres; to_l
+#   accepts only the simulated decimal separator of the PC); the cases run
+#   twice, on a PC with a decimal comma, then with a decimal point. The
+#   plugin files are loaded from the repository.
 # Inside SketchUp (test battery), with the plugin loaded:
 #   CircleMasterTests::VcbParserCases.run -> [passed, failed, report lines]
 #   uses the real to_l: the model must be in millimetres.
@@ -32,21 +34,36 @@ if CircleMasterTests::VcbParserCases::OFFLINE
       mm = (length.to_f * 25.4).round(4)
       "#{mm == mm.round ? mm.round : mm}mm"
     end
+
+    # Simulated decimal separator of the PC (set by the offline run).
+    module RegionalSettings
+      @separator = ','
+      class << self
+        attr_writer :separator
+
+        def decimal_separator
+          @separator
+        end
+      end
+    end
   end
 
   class String
-    # Simulated String#to_l of a model in millimetres.
+    # Simulated String#to_l of a model in millimetres: like the real one, it
+    # accepts only the decimal separator of the PC.
     def to_l
       units = { nil => 1 / 25.4, 'mm' => 1 / 25.4, 'cm' => 10 / 25.4, 'm' => 1000 / 25.4,
                 '"' => 1.0, 'in' => 1.0, "'" => 12.0, 'ft' => 12.0, 'yd' => 36.0 }
-      num = '(\d+(?:[.,]\d*)?|[.,]\d+)'
+      sep = Regexp.escape(Sketchup::RegionalSettings.decimal_separator)
+      num = "(\\d+(?:#{sep}\\d*)?|#{sep}\\d+)"
+      value = ->(t) { t.sub(Sketchup::RegionalSettings.decimal_separator, '.').to_f }
       s = strip
       if (m = /\A#{num}'\s*#{num}"\z/.match(s))
-        return m[1].tr(',', '.').to_f * 12.0 + m[2].tr(',', '.').to_f
+        return value.call(m[1]) * 12.0 + value.call(m[2])
       end
       m = /\A#{num}\s*(mm|cm|m|in|ft|yd|"|')?\z/.match(s)
       raise ArgumentError, "Cannot convert \"#{s}\" to Length" unless m
-      m[1].tr(',', '.').to_f * units[m[2]]
+      value.call(m[1]) * units[m[2]]
     end
   end
 
@@ -109,7 +126,12 @@ module CircleMasterTests
       ['+r0.5',       length: 0.5, kind: :radius, sign: 1],
       ['-0.5r',       length: 0.5, kind: :radius, sign: -1],
       ['--1',         length: 1, kind: :default, sign: 1],
-      ['--3',         length: 3, kind: :default, sign: 1]
+      ['--3',         length: 3, kind: :default, sign: 1],
+      # Decimal point or comma, whatever the separator of the PC
+      ['7,5r',        length: 7.5, kind: :radius],
+      ['r7,5',        length: 7.5, kind: :radius],
+      ['+0,5',        length: 0.5, kind: :default, sign: 1],
+      ['+r0,5',       length: 0.5, kind: :radius, sign: 1]
     ].freeze
 
     # [input, error message]
@@ -120,6 +142,9 @@ module CircleMasterTests
       ['; ;',   'Empty input'],
       ['abc',   'Invalid value: abc'],
       ['5x',    'Invalid value: 5x'],
+      # The message shows the text as typed. ("7,5x" is not refused: the
+      # real to_l ignores the trailing letter.)
+      ['x7.5',  'Invalid value: x7.5'],
       ['r',     'Invalid value: r'],
       ['0',     'Value must be positive: 0'],
       ['-0',    'Value must be positive: 0'],
@@ -220,6 +245,15 @@ module CircleMasterTests
       e.message
     end
 
+    # Yards are a unit of String#to_l since SketchUp 2020 only.
+    def self.yards?
+      return true if OFFLINE
+      '1yd'.to_l
+      true
+    rescue ArgumentError
+      false
+    end
+
     def self.run
       lines = []
       check = lambda do |name, error|
@@ -227,6 +261,10 @@ module CircleMasterTests
       end
 
       PARSE.each do |input, want|
+        if input =~ /yd\z/i && !yards?
+          lines << "SKIP parse #{input.inspect} (yards unknown to String#to_l of this SketchUp)"
+          next
+        end
         res = nil
         err = error_of { res = parser.parse(input) }
         check.call("parse #{input.inspect}", err ? "error #{err}" : field_errors(res, want))
@@ -245,10 +283,12 @@ module CircleMasterTests
         end
       end
       RADIUS.each do |input, mode, want|
-        got = with_mode(mode) { parser.radius_from(parser.parse(input)) }
+        got = nil
+        err = with_mode(mode) { error_of { got = parser.radius_from(parser.parse(input)) } }
         ok = want.nil? ? got.nil? : (!got.nil? && close?(got, want))
         got_mm = got && (got / MM).round(6)
-        check.call("radius_from #{input.inspect} (#{mode})", ok ? nil : "got #{got_mm.inspect} mm")
+        name = "radius_from #{input.inspect} (#{mode})"
+        check.call(name, err ? "error #{err}" : (ok ? nil : "got #{got_mm.inspect} mm"))
       end
       TARGET.each do |input, mode, current, want|
         got = nil
@@ -267,19 +307,29 @@ module CircleMasterTests
       end
       DESCRIBE.each do |input, mode, prefix, sign, mm|
         want = "#{prefix} #{sign}#{Sketchup.format_length(mm * MM)}"
-        got = with_mode(mode) { parser.describe(parser.parse(input)) }
-        check.call("describe #{input.inspect} (#{mode})", got == want ? nil : "got #{got.inspect}, want #{want.inspect}")
+        got = nil
+        err = with_mode(mode) { error_of { got = parser.describe(parser.parse(input)) } }
+        name = "describe #{input.inspect} (#{mode})"
+        check.call(name, err ? "error #{err}" : (got == want ? nil : "got #{got.inspect}, want #{want.inspect}"))
       end
 
       failed = lines.count { |l| l.start_with?('FAIL') }
-      [lines.size - failed, failed, lines]
+      skipped = lines.count { |l| l.start_with?('SKIP') }
+      [lines.size - failed - skipped, failed, lines]
     end
   end
 end
 
+# Outside SketchUp: on a PC with a decimal comma, then with a decimal point.
 if CircleMasterTests::VcbParserCases::OFFLINE
-  passed, failed, lines = CircleMasterTests::VcbParserCases.run
-  puts lines
-  puts "#{passed} passed, #{failed} failed"
-  exit(failed.zero? ? 0 : 1)
+  total_failed = 0
+  [',', '.'].each do |sep|
+    Sketchup::RegionalSettings.separator = sep
+    passed, failed, lines = CircleMasterTests::VcbParserCases.run
+    puts "--- decimal separator #{sep.inspect}"
+    puts lines
+    puts "#{passed} passed, #{failed} failed (decimal separator #{sep.inspect})"
+    total_failed += failed
+  end
+  exit(total_failed.zero? ? 0 : 1)
 end

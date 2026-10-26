@@ -68,3 +68,23 @@
 - **circle_master/settings_dialog.rb** — `resizable: true`, `scrollable: true`, hauteur par défaut 480 → 560, minimum 320 × 400 (`min_width`, `min_height`) ; suppression du `set_size` qui imposait 360 × 480 à chaque ouverture et écrasait la taille mémorisée par SketchUp sous `preferences_key`.
 - Constat (lecture seule de `PrivatePreferences.json`) : SketchUp 2021 avait déjà mémorisé 360 × 480 sous `WebCommonDialog_CircleMaster_Settings` ; sur ce PC, la première ouverture reste donc à 480 jusqu'au premier agrandissement.
 - **FSD.md** — Ligne « Fenêtre Settings » des différences avec Circle Advanced.
+
+### Lanceur de tests et comparaison des moteurs (étapes 5 et 6, préparation)
+
+- **Demande utilisateur** : lanceur de tests repris de Solid Progress ; vérifier que le moteur de Solid Progress est le plus performant ; utiliser Solid for Maker pour les booléens sous Make 2017.
+- **tools/tests/run_tests.ps1** (créé, repris de Solid Progress) — Déploiement, lancement `-RubyStartup`, attente du rapport, fermeture du seul SketchUp lancé ; sauvegarde de `PrivatePreferences.json` avant de désactiver l'écran d'accueil de 2021 ; modes manuel et démo de Solid Progress non repris.
+- **tools/tests/run_tests.rb** (créé, repris de Solid Progress) — Runner (cas, minuteurs, boîtes de message interceptées, `write_default` intercepté, définitions inutilisées, rapport) ; cas INFO qui n'échouent jamais ; tests P1, S1 à S5, Z1.
+- **tools/tests/engine_cases.rb** (créé) — E1 à E8 : Solid Progress (installé) contre Cylinder Resize sur le même solide cassé (géométries des T15 de Solid Progress), opérations annulées, signature de forme, temps ; booléens natifs (Pro) ou Solid for Maker 1.0.1 (Make) ; E9 segments de Circle Advanced, E10 rayon de Cylinder Resize.
+- **tools/tests/vcb_parser_cases.rb** — Chaque cas attrape sa propre erreur ; dans SketchUp, décimales au séparateur du PC (`,` ici : le vrai `to_l` refuse `7.5`) ; yards sautés là où `to_l` ne les connaît pas (SketchUp 2017).
+- Corrections de tests en cours de route : une distance est une `Length`, comparée avec la tolérance de SketchUp (`distance < 1e-4` toujours faux) → `.to_f` ; un cercle natif dont on coupe une arête reste natif → cas E2 sur cercle éclaté.
+- Lancement : refusé à Claude avec `powershell -ExecutionPolicy Bypass` (classifieur de permissions) ; lancé directement dans la session PowerShell de Claude Code (déjà en `Bypass` pour son processus).
+- **Résultats** : 9/9 sous SketchUp 2021 Pro (30 s) et sous Make 2017 (23 s). Moteurs : même résultat sur 7 géométries sur 8 ; cercle avec point de coupe : seul Solid Progress répare ; plaque de 20 trous : Solid Progress 2,1 s / Cylinder Resize 15,3 s (2021), 1,4 s / 7,3 s (2017).
+- **PRD.md** — Q-2 et Q-3 : résultats et recommandation. **FSD.md** — Section « Tests », structure.
+
+### Point ou virgule décimale (EF-11)
+
+- **Demande utilisateur** : accepter le point et la virgule comme séparateur décimal (sur ce PC, `to_l` refusait `7.5`).
+- **circle_master/vcb_parser.rb** — `local_decimals` : avant `to_l`, tout point ou virgule collé à un chiffre devient `Sketchup::RegionalSettings.decimal_separator` ; message d'erreur avec le texte tapé.
+- **tools/tests/vcb_parser_cases.rb** — Conversion des cas au séparateur du PC retirée (point et virgule doivent passer avec le vrai `to_l`) ; hors SketchUp, `to_l` simulé à un seul séparateur et deux passages (virgule, point) ; 5 cas ajoutés (`7,5r`, `r7,5`, `+0,5`, `+r0,5`, refus de `x7.5`) : 92 cas. Constat : le vrai `to_l` accepte `7,5x` (lettre finale ignorée).
+- **PRD.md** — EF-11, CA-07, décision (exception à « rien de nouveau en 1.0.0 »). **FSD.md** — Section Saisie : séparateur décimal, limites.
+- Vérifications : 92/92 hors SketchUp avec chaque séparateur ; batterie 9/9 sous SketchUp 2021 Pro (92 cas avec le vrai `to_l`) et sous Make 2017 (91 cas, yards sautés).

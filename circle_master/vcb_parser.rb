@@ -11,6 +11,7 @@
 #   50;36s            diameter + segments
 #   +5, -2.5, +r1     increment of the size of an existing circle or cylinder
 #                     ("--5" = "+5", when "+" is taken by a shortcut)
+# Decimal point or comma, whatever the decimal separator of the PC.
 # The cylinder resizing takes a size only (parse_size): no segment count.
 
 module CircleMaster
@@ -82,10 +83,21 @@ module CircleMaster
       end
     end
 
-    # Converts a string to a Length in model units.
+    # A point or a comma next to a digit: decimal mark.
+    DECIMAL_RE = /(?<=\d)[.,]|[.,](?=\d)/
+
+    # +text+ with its decimal marks (point or comma) turned into the decimal
+    # separator of this PC, the only one String#to_l accepts. Values are
+    # separated by ';', never by ','.
+    def self.local_decimals(text)
+      return text unless defined?(Sketchup::RegionalSettings)
+      text.gsub(DECIMAL_RE, Sketchup::RegionalSettings.decimal_separator)
+    end
+
+    # Converts a string to a Length in model units (decimal point or comma).
     def self.to_length(str)
       begin
-        len = str.strip.to_l
+        len = local_decimals(str.strip).to_l
       rescue ArgumentError
         raise ArgumentError, "Invalid value: #{str}"
       end

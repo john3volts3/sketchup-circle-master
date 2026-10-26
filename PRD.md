@@ -28,7 +28,7 @@ Toutes les fonctions de Circle Advanced 1.4.0 et de Cylinder Resize 0.3.0 (voir 
 
 - Commande autonome de réparation des cercles cassés (Curvizard, Eneroth Auto Weld : payants).
 - Cônes pointus, cylindres obliques, tubes et cylindres empilés au-delà de ce que font déjà les deux plugins.
-- Nouvelles fonctions en 1.0.0.
+- Nouvelles fonctions en 1.0.0, sauf EF-11 (demandée par l'utilisateur le 2026-10-26).
 
 ## 5. Exigences fonctionnelles
 
@@ -46,6 +46,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-08 | **Un seul analyseur de saisie** accepté par l'outil Circle et par le redimensionnement des cylindres | Im | proposée |
 | EF-09 | **Un seul réglage diamètre / rayon** pour toutes les commandes | Im | proposée |
 | EF-10 | Réglages repris de Circle Advanced (`CircleAdvanced`) et de Cylinder Resize (`CylinderResize`) tant qu'ils ne sont pas changés dans Circle Master | Im | proposée |
+| EF-11 | **Point ou virgule décimale** dans toutes les saisies (zone Mesures, fenêtre *Resize Cylinders…*), quel que soit le séparateur décimal du PC (`7.5` et `7,5`) | Im | proposée |
 
 ## 6. Exigences non fonctionnelles
 
@@ -72,6 +73,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-03 | Cylindre découpé par un booléen → redimensionné et reconstruit en cercles natifs | EF-05 |
 | CA-04 | Tous les cas de saisie des deux plugins d'origine acceptés par l'analyseur unique | EF-08 |
 | CA-05 | Réglages des anciens plugins repris au premier lancement | EF-10 |
+| CA-07 | `7.5` et `7,5` acceptés et égaux, sur un PC à virgule et sur un PC à point (cas de l'analyseur avec le vrai `to_l`) | EF-11 |
 | CA-06 | Batterie verte sous 2021 Pro et Make 2017 | NF-04, NF-06 |
 
 ## 9. Questions ouvertes et décisions
@@ -81,8 +83,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | # | Question | À traiter |
 |---|---|---|
 | Q-1 | Unifier le redimensionnement (un seul outil qui choisit selon la sélection : cercle, arc ou paroi de cylindre) ? | Après la 1.0.0 |
-| Q-2 | Moteur de reconstruction unique, à partir de trois versions : `volume.rb` de Circle Advanced (change les segments), `rebuilder.rb` de Cylinder Resize (change le rayon), `circle_restore/volume.rb` de Solid Progress ; le moteur unique prend le rayon et le nombre de segments | Comparaison des trois sur la même géométrie (étape 5 des directives) |
-| Q-3 | Accélération de `repair_holes` (`OPTIMISATION_REPAIR_HOLES.md`) en 1.0.0 ou 1.1 ? Déjà présente dans la version de Solid Progress | Après validation par comparaison (avec Q-2) |
+| Q-2 | Moteur de reconstruction unique, à partir de trois versions : `volume.rb` de Circle Advanced (change les segments), `rebuilder.rb` de Cylinder Resize (change le rayon), `circle_restore/volume.rb` de Solid Progress ; le moteur unique prend le rayon et le nombre de segments. **Comparaison faite le 2026-10-26** (`tools/tests/engine_cases.rb`, 2021 Pro et Make 2017) : Solid Progress et Cylinder Resize donnent le même résultat sur 7 géométries sur 8 ; sur un cercle cassé avec un point de coupe en plus, seul Solid Progress répare (Cylinder Resize ne reconnaît pas le cylindre) ; plaque de 20 trous : Solid Progress 5 à 7 fois plus rapide (2,1 s / 15,3 s en 2021, 1,4 s / 7,3 s en 2017). Recommandation : base Solid Progress + rayon (Cylinder Resize) + segments (Circle Advanced) | Décision de l'utilisateur, puis étape 5 |
+| Q-3 | Accélération de `repair_holes` (`OPTIMISATION_REPAIR_HOLES.md`) en 1.0.0 ou 1.1 ? Déjà présente dans la version de Solid Progress, mesurée avec Q-2 (mêmes résultats, 5 à 7 fois plus rapide sur 20 trous) | Avec Q-2 |
 | Q-4 | Raccourci clavier recommandé (C pour Circle, comme Circle Advanced) | Manuel |
 
 ### Décisions
@@ -96,6 +98,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | 2026-10-26 | Anciens plugins pendant la construction | Laissés installés (SketchUp 2017 et 2021) : menus en double acceptés, pas de conflit Ruby (modules distincts) ; les tests ne vérifient que Circle Master |
 | 2026-10-26 | Noms dans *Annuler* | Préfixe du nom affiché (directive § 1, comme Solid Progress) : *Circle Master — Circle*, *Circle Master — Resize Circle*… |
 | 2026-10-26 | Cylinder Resize Tool et le réglage diamètre / rayon | L'outil suit le réglage commun (EF-09) : `15` est un rayon si `input_mode = radius` (dans Cylinder Resize 0.3.0, toujours un diamètre) |
+| 2026-10-26 | Séparateur décimal | Point et virgule acceptés (EF-11), exception à « rien de nouveau en 1.0.0 » ; `;` reste le seul séparateur de valeurs ; pas de séparateur de milliers |
 | 2026-10-26 | Champ *Mode* de la fenêtre Resize Cylinders | Lu dans le réglage commun et écrit s'il change : l'outil Circle suit le choix fait dans la fenêtre |
 | 2026-10-26 | Reprise de `input_mode` | Lu dans `CircleMaster`, sinon `CircleAdvanced/input_mode`, sinon `CylinderResize/mode` : Circle Advanced l'emporte si les deux anciens diffèrent |
 
