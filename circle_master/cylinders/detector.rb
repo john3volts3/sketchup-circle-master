@@ -168,6 +168,17 @@ module CircleMaster
                         curve.radius.to_f, curve)
       end
 
+      # Broken circle: chain detection first (Re-Cercle: split points left by
+      # a solid operation accepted), else the mean of the vertices.
+      chain = Chains.chain_from(edges.first)
+      if chain && chain.closed && chain.edges.length == edges.length
+        loop_set = {}
+        edges.each { |e| loop_set[e] = true }
+        if chain.edges.all? { |e| loop_set[e] }
+          return Loop.new(edges, vertices, chain.center, chain.normal, chain.radius, nil)
+        end
+      end
+
       pts = vertices.map(&:position)
       n = pts.length.to_f
       cx = pts.inject(0.0) { |s, p| s + p.x.to_f } / n

@@ -12,7 +12,7 @@
 # erased: host faces (hole in a block) and their materials are kept.
 #
 # A cylinder with a non-native end circle is rebuilt instead, directly at its
-# target size, with two native circles (Rebuilder, method of Re-Cercle: its
+# target size, with two native circles (Volume, method of Re-Cercle: its
 # faces are recreated). When that is not possible, it is resized as above and
 # its non-native circles are welded into one curve (Entities#weld), without
 # erasing any face.
@@ -49,9 +49,10 @@ module CircleMaster
           Sketchup.status_text =
             "#{PLUGIN_NAME} — Cylinder #{i + 1}/#{cylinders.length}"
           broken = loops.count { |loop, _radius| loop.arc.nil? }
-          reason = broken > 0 ? Rebuilder.unsupported_reason(cylinders[i]) : nil
-          if broken > 0 && reason.nil?
-            anchors << Rebuilder.rebuild(entities, cylinders[i], loops.map(&:last))
+          body, reason = broken > 0 ? rebuild_body(cylinders[i]) : [nil, nil]
+          if body
+            radii = body.loops.map { |bl| radius_at(loops, bl.center) }
+            anchors << Volume.rebuild(entities, body, radii: radii)
             native += broken
           else
             puts "[#{PLUGIN_NAME}] Not rebuilt as native circles (#{reason}): welded" if reason
@@ -71,6 +72,21 @@ module CircleMaster
         raise e
       end
       [count, native, welded, anchors]
+    end
+
+    # [Volume::Body, nil] when +cyl+ can be rebuilt natively, else [nil,
+    # reason] (it is then resized and welded instead).
+    def self.rebuild_body(cyl)
+      unless cyl.valid? && cyl.loops.all? { |l| l.edges.all?(&:valid?) }
+        return [nil, 'cylinder changed since its detection']
+      end
+      Volume.build(cyl.faces)
+    end
+
+    # Target radius of the planned circle (+loops+: [Detector::Loop, radius])
+    # whose center is the nearest to +center+.
+    def self.radius_at(loops, center)
+      loops.min_by { |loop, _radius| loop.center.distance(center).to_f }.last
     end
 
     # Status text suffix reporting the repaired circles.

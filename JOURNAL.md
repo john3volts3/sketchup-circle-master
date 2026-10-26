@@ -88,3 +88,18 @@
 - **tools/tests/vcb_parser_cases.rb** — Conversion des cas au séparateur du PC retirée (point et virgule doivent passer avec le vrai `to_l`) ; hors SketchUp, `to_l` simulé à un seul séparateur et deux passages (virgule, point) ; 5 cas ajoutés (`7,5r`, `r7,5`, `+0,5`, `+r0,5`, refus de `x7.5`) : 92 cas. Constat : le vrai `to_l` accepte `7,5x` (lettre finale ignorée).
 - **PRD.md** — EF-11, CA-07, décision (exception à « rien de nouveau en 1.0.0 »). **FSD.md** — Section Saisie : séparateur décimal, limites.
 - Vérifications : 92/92 hors SketchUp avec chaque séparateur ; batterie 9/9 sous SketchUp 2021 Pro (92 cas avec le vrai `to_l`) et sous Make 2017 (91 cas, yards sautés).
+
+### Étape 5 des directives : moteur de reconstruction unique
+
+- **Décisions de l'utilisateur** : moteur de Solid Progress comme base, avec le rayon (Cylinder Resize) et les segments (Circle Advanced) ; détection par chaîne dans le `Detector` des cylindres (recommandation acceptée) ; géométries des tests en mm ; tolérances internes du plugin laissées en pouces (unité de SketchUp).
+- **circle_master/chains.rb** (créé) — Détection par chaînes de Solid Progress 2.0.1 / Re-Cercle 2.0 (`Run`, `Chain`, `chain_from` et sa géométrie), module `CircleMaster::Chains` ; `find_chains` et le classement non repris (inutiles ici).
+- **circle_master/volume.rb** (remplacé) — Moteur de Solid Progress (réparation des trous par grilles) ; ajouts : `rebuild(entities, body, radii:, segments:)`, vérification finale (une `ArcCurve` de N arêtes au rayon cible à chaque bout, sinon exception), retour d'un sommet d'ancrage, `from_curve` (Circle Advanced), lecture directe d'un cercle natif (toute valeur de segments) ; `Body#segments`.
+- **circle_master/cylinders/rebuilder.rb** — Supprimé (`git rm`), remplacé par `Volume`.
+- **circle_master/cylinders/resizer.rb** — Cylindre au cercle cassé : `rebuild_body` (validité + `Volume.build`) puis `Volume.rebuild(…, radii:)`, rayons associés par centre le plus proche (`radius_at`) ; repli inchangé (sommets déplacés puis soudure).
+- **circle_master/cylinders/detector.rb** — `fit_circle` : cercle cassé détecté par chaîne d'abord, moyenne des sommets en secours.
+- **circle_master/resegmenter.rb** — `Volume.rebuild(…, segments: n)` ; `Chains::BASE_TOL` au lieu de `Volume::BASE_TOL` (constante de l'ancien moteur).
+- **circle_master/main.rb** — `FILES` : `chains` ajouté, `cylinders/rebuilder` retiré.
+- **tools/tests/engine_cases.rb** (réécrit) — Comparaison avec les trois moteurs d'origine installés : réparation (Solid Progress), rayon +0,1 mm (Cylinder Resize), segments 24 → 48 et 24 → 12 (Circle Advanced, 6 solides natifs N1 à N6) ; géométries en mm (Solid Progress à l'échelle 1″ → 10 mm). **tools/tests/run_tests.rb** — `slot` en mm, hauteurs comparées en `Float`, en-tête du tableau des moteurs.
+- **Résultats** (2021 Pro et Make 2017) : 9/9 ; 27 comparaisons identiques sur 28, la 28e (cercle à point de coupe) n'était pas reconnue par l'ancien Cylinder Resize et est reconstruite par Circle Master ; plaque de 20 trous, rayon : 2,0 s au lieu de 11,0 s (2021), 1,3 s au lieu de 7,2 s (2017).
+- **FSD.md** — Section « Moteur de reconstruction unique », différences avec Cylinder Resize, tests, structure. **PRD.md** — Q-2 et Q-3 tranchées, décisions.
+- Test utilisateur OK dans SketchUp 2021 (segments d'un cylindre, trou par *Soustraire* redimensionné en valeur et en incrément, annulation, plusieurs trous, coin arrondi).

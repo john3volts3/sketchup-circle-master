@@ -7,11 +7,11 @@ Rédigée pendant la construction du bundle, à partir des FSD des deux plugins 
 
 Plan prévu : objectif ; entrées (sélections, saisies de l'analyseur unique) ; outil Circle ; redimensionnement des cylindres ; moteur de reconstruction unique ; réglages et reprise des anciens ; interface (menu, barre d'outils, fenêtres) ; limitations ; structure des fichiers ; tests ; historique des versions.
 
-État : les quatre commandes sont portées (étapes 1 à 4 des directives). Reste : moteur de reconstruction unique (étape 5), batterie (étape 6), documentation.
+État : les quatre commandes sont portées et passent par un moteur de reconstruction unique (étapes 1 à 5 des directives). Reste : batterie complète (étape 6), documentation.
 
 ## Outil Circle et fenêtre Settings (EF-01)
 
-Code de Circle Advanced 1.4.0, comportement identique : voir `../sketchup-circle-advanced/FSD.md` § 2 (tracé, verrouillage, saisie, résultat, paramètres, mode modification, segments des cercles, des extrémités de cylindre et des coins arrondis, mode copie, double-clic) ; ce détail sera fusionné ici avec la documentation. Fichiers : `circle_tool.rb`, `resegmenter.rb`, `fillet.rb`, `volume.rb` (moteur provisoire, choix du moteur unique à l'étape 5), `settings_dialog.rb`, `html/settings.html`.
+Code de Circle Advanced 1.4.0, comportement identique : voir `../sketchup-circle-advanced/FSD.md` § 2 (tracé, verrouillage, saisie, résultat, paramètres, mode modification, segments des cercles, des extrémités de cylindre et des coins arrondis, mode copie, double-clic) ; ce détail sera fusionné ici avec la documentation. Fichiers : `circle_tool.rb`, `resegmenter.rb`, `fillet.rb`, `settings_dialog.rb`, `html/settings.html` ; segments d'une extrémité de cylindre par le moteur unique (`volume.rb`, ci-dessous).
 
 Différences avec Circle Advanced :
 
@@ -24,7 +24,7 @@ Différences avec Circle Advanced :
 
 ## Redimensionnement des cylindres (EF-02 à EF-06)
 
-Code de Cylinder Resize 0.3.0, comportement identique : voir `../sketchup-cylindrer-resize/FSD.md` (détection d'un cylindre ou tronc de cône par sa paroi, rayon cible par cercle, cônes, déplacement des sommets ou reconstruction native des cercles cassés, soudure en secours, faces hôtes, composants, interfaces, limitations) ; ce détail sera fusionné ici avec la documentation. Fichiers : `cylinders/detector.rb`, `cylinders/rebuilder.rb` (moteur provisoire, choix du moteur unique à l'étape 5), `cylinders/resizer.rb`, `cylinders/resize_tool.rb` ; fenêtre dans `main.rb` (`CircleMaster.resize_selection`).
+Code de Cylinder Resize 0.3.0, comportement identique : voir `../sketchup-cylindrer-resize/FSD.md` (détection d'un cylindre ou tronc de cône par sa paroi, rayon cible par cercle, cônes, déplacement des sommets ou reconstruction native des cercles cassés, soudure en secours, faces hôtes, composants, interfaces, limitations) ; ce détail sera fusionné ici avec la documentation. Fichiers : `cylinders/detector.rb`, `cylinders/resizer.rb`, `cylinders/resize_tool.rb` ; fenêtre dans `main.rb` (`CircleMaster.resize_selection`) ; reconstruction native par le moteur unique (`volume.rb`, ci-dessous).
 
 Différences avec Cylinder Resize :
 
@@ -37,6 +37,19 @@ Différences avec Cylinder Resize :
 | Analyse de la saisie | `VcbParser.parse(text, default_kind)` | `VcbParser.parse_size(text)` (segments refusés, même message) |
 | Nom dans *Annuler* | `Resize Cylinders` | `Circle Master — Resize Cylinders` |
 | Fenêtre Settings ouverte avec l'outil actif | — | *OK* rafraîchit la zone Mesures et l'aide de l'outil |
+| Cercle cassé avec un point de coupe en plus (laissé par un booléen) | centre par moyenne des sommets : cylindre non reconnu | détection par chaîne d'abord (`Chains`), moyenne en secours : reconnu et reconstruit |
+| Reconstruction native | `rebuilder.rb` | moteur unique `Volume.rebuild(…, radii:)` : même résultat, 5 à 6 fois plus rapide sur une plaque de 20 trous |
+
+## Moteur de reconstruction unique (Q-2, Q-3)
+
+`circle_master/volume.rb` (`CircleMaster::Volume`) et `circle_master/chains.rb` (`CircleMaster::Chains`) : moteur de Solid Progress 2.0.1 (issu de Re-Cercle 2.0, réparation des trous par grilles de Solid for Maker), choisi après comparaison des trois moteurs d'origine (2026-10-26).
+
+- `Volume.build(faces)` → `[body, nil]` ou `[nil, raison]` : paroi = faces reliées par arêtes adoucies, bordée par 2 boucles ; chaque boucle est un cercle natif (lu sur son `ArcCurve`, quel que soit son nombre de segments, comme Circle Advanced) ou une chaîne (`Chains.chain_from` : points de coupe acceptés, 6 segments au moins) ; même nombre de segments, coaxiales, aucune ligne raccordée, faces voisines dans le plan, une face à un bout au moins.
+- `Volume.from_curve(curve)` : corps dont `curve` (cercle natif sélectionné) est une extrémité ; `ArgumentError` avec la raison sinon (outil Circle).
+- `Volume.rebuild(entities, body, radii: nil, segments: nil)` : par défaut même taille et mêmes segments (réparation) ; `radii:` (un rayon par boucle, Cylinder Resize) et `segments:` (Circle Advanced). Phase : premier coin de la boucle 0. Vérification finale : chaque bout est une seule `ArcCurve` de N arêtes au rayon cible, sinon exception (l'opération de l'appelant est annulée). Renvoie un sommet du cercle de départ (outil Cylinder Resize).
+- Appelants : `Resegmenter` (segments d'une extrémité de cylindre), `Resizer` (cylindre au cercle cassé : `Resizer.rebuild_body` = contrôle de validité + `Volume.build`, rayons cibles associés par centre le plus proche) ; `Fillet` utilise `Volume.tolerance`, `outward?`, `repair_holes`.
+
+Comparaison avec les moteurs d'origine installés (`tools/tests/engine_cases.rb`, SketchUp 2021 Pro et Make 2017) : réparation identique à Solid Progress (8/8), rayon +0,1 mm identique à Cylinder Resize (7/8 ; le 8e est le cercle à point de coupe, non reconnu par Cylinder Resize, reconstruit par Circle Master), segments 24 → 48 et 24 → 12 identiques à Circle Advanced (12/12). Plaque de 20 trous, rayon : Circle Master 2,0 s / Cylinder Resize 11,0 s (2021), 1,3 s / 7,2 s (2017).
 
 ## Saisie : analyseur unique (EF-08)
 
@@ -111,9 +124,9 @@ Batterie automatique sur le modèle de Solid Progress, hors `.rbz` :
 
 - `tools/tests/run_tests.ps1` (ASCII) : SketchUp fermé, il déploie le plugin (`circle_master.rb` + miroir `robocopy` de `circle_master/`), lance SketchUp avec `-RubyStartup tools/tests/run_tests.rb`, attend le rapport, ferme le seul SketchUp lancé et affiche le rapport. Options `-Versions 2021,2017`, `-Timeout`, `-NoDeploy`. SketchUp 2021 : écran d'accueil désactivé le temps du test (`PrivatePreferences.json` sauvegardé d'abord dans `%USERPROFILE%\claude-backups\…`, 5 copies gardées, fichier de plus de 20 Mo jamais touché) ; Make 2017 : cliquer sur le bouton de l'écran d'accueil.
 - `tools/tests/run_tests.rb` : nouveau modèle vide en millimètres, étapes chaînées par minuteur, boîtes de message et `write_default` interceptés (aucune préférence écrite), définitions inutilisées signalées, rapport `tools/tests/results/latest-<21|17>.txt` (ignoré par git).
-- Cas : P1 analyseur (`vcb_parser_cases.rb`, vrai `to_l` ; les yards sont sautés là où `to_l` ne les connaît pas, SketchUp 2017) ; S1 à S5 commandes (création d'un cercle, cercle sélectionné `+10` puis `36s`, segments d'un cylindre, Cylinder Resize Tool `52` / `--1` / annulation, refus de `24s`) ; E1 à E8 comparaison des moteurs (INFO, n'échouent jamais : même solide cassé, chaque moteur dans une opération annulée, signature de forme et temps ; booléens natifs en Pro, Solid for Maker en Make) ; E9 segments de Circle Advanced ; E10 rayon de Cylinder Resize ; Z1 aucune préférence écrite.
+- Cas : P1 analyseur (`vcb_parser_cases.rb`, vrai `to_l` ; les yards sont sautés là où `to_l` ne les connaît pas, SketchUp 2017) ; S1 à S5 commandes (création d'un cercle, cercle sélectionné `+10` puis `36s`, segments d'un cylindre, Cylinder Resize Tool `52` / `--1` / annulation, refus de `24s`) ; E1 à E8 et N1 à N6 comparaison du moteur unique avec les moteurs d'origine installés (INFO, n'échouent jamais : même solide, chaque moteur dans une opération annulée, signature de forme et temps ; réparation face à Solid Progress et rayon +0,1 mm face à Cylinder Resize sur 8 solides cassés, booléens natifs en Pro, Solid for Maker en Make ; segments 24 → 48 et 24 → 12 face à Circle Advanced sur 6 solides natifs) ; E9 segments par le moteur unique ; E10 rayon par `Resizer` ; Z1 aucune préférence écrite. Géométries en mm (celles de Solid Progress à l'échelle 1″ → 10 mm).
 
-Résultat du 2026-10-26 : 9/9 sous SketchUp 2021 Pro et sous Make 2017.
+Résultat du 2026-10-26 : 9/9 sous SketchUp 2021 Pro et sous Make 2017 ; comparaisons : voir « Moteur de reconstruction unique ».
 
 ## Structure des fichiers
 
@@ -127,12 +140,12 @@ circle_master/
   circle_tool.rb            # outil Circle (Circle Advanced)
   resegmenter.rb            # segments des cercles et arcs existants
   fillet.rb                 # segments des coins arrondis
-  volume.rb                 # segments d'un cylindre ou tronc de cône (moteur provisoire)
+  chains.rb                 # détection des cercles par chaînes (Re-Cercle)
+  volume.rb                 # moteur unique : cylindres et troncs de cône natifs
   settings_dialog.rb        # fenêtre Settings
   html/settings.html
   cylinders/                # Cylinder Resize
     detector.rb             # détection d'un cylindre ou tronc de cône par sa paroi
-    rebuilder.rb            # reconstruction native à un nouveau rayon (moteur provisoire)
     resizer.rb              # redimensionnement, une opération annulable
     resize_tool.rb          # outil interactif
   icons/                    # icônes des deux plugins d'origine, noms inchangés

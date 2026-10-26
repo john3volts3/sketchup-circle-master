@@ -4,8 +4,8 @@
 require 'sketchup.rb'
 
 module CircleMaster
-  FILES = %w[settings vcb_parser volume fillet resegmenter circle_tool settings_dialog
-             cylinders/detector cylinders/rebuilder cylinders/resizer cylinders/resize_tool].freeze
+  FILES = %w[settings vcb_parser chains volume fillet resegmenter circle_tool settings_dialog
+             cylinders/detector cylinders/resizer cylinders/resize_tool].freeze
 
   FILES.each { |f| Sketchup.require(File.join(PLUGIN_DIR, f)) }
 

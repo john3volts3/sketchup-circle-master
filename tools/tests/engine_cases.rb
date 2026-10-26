@@ -1,26 +1,40 @@
 # encoding: UTF-8
-# Comparison of the reconstruction engines (step 5 of DIRECTIVES_BUNDLE.md),
-# loaded by run_tests.rb.
+# Comparison of the single reconstruction engine of Circle Master
+# (CircleMaster::Volume, step 5 of DIRECTIVES_BUNDLE.md) with the engines it
+# replaces, as installed in this SketchUp; loaded by run_tests.rb.
 #
-#   Solid Progress   SolidProcedural::CircleRestore.restore_in_solid, as
-#                    installed in this SketchUp (rebuilds every broken
-#                    circle of a solid, same size and segment count)
-#   Cylinder Resize  CircleMaster::Detector + Rebuilder (cylinders/), as
-#                    Resizer.resize does, at the current radii
-#   Circle Advanced  CircleMaster::Volume (segment count change): no
-#                    counterpart, checked on its own (E9)
+#   repair    Solid Progress  SolidProcedural::CircleRestore.restore_in_solid
+#                             (every broken circle, same size)
+#   radius    Cylinder Resize CylinderResize::Detector + Rebuilder, each broken
+#                             cylinder 0.1 mm larger in radius
+#   segments  Circle Advanced CircleAdvanced::Volume, 24 -> 48 and 24 -> 12
+#                             segments from a native end circle
+# Circle Master runs the same work through Detector, Resizer.rebuild_body
+# and Volume (as Resizer.resize and Resegmenter do).
 #
-# Each INFO case builds one broken solid (geometry of the T15 tests of Solid
-# Progress), then runs each engine in an operation that is aborted, and
-# compares the results (faces, edges, circles, volume, materials) and times.
-# The booleans are native in SketchUp Pro, Solid for Maker in Make.
+# Each INFO case builds one solid (broken ones: geometry of the T15 tests of
+# Solid Progress, 1" there = 10 mm here; booleans native in SketchUp Pro,
+# Solid for Maker in Make),
+# runs each engine in an operation that is aborted, and compares the results
+# (faces, edges, circles, volume, materials) and times. E9 and E10 check
+# Circle Master on its own.
 
 module CircleMasterTests
+  RADIUS_DELTA = 0.1.mm # radius cases: diameter + 0.2 mm
+
   # Solid Progress engine available in this SketchUp: its version, or nil.
   def self.sp_version
     return nil unless defined?(SolidProcedural::CircleRestore) &&
                       SolidProcedural::CircleRestore.respond_to?(:restore_in_solid)
     defined?(SolidProcedural::VERSION) ? SolidProcedural::VERSION : '?'
+  end
+
+  def self.cr_engine?
+    defined?(CylinderResize::Rebuilder) && defined?(CylinderResize::Detector) ? true : false
+  end
+
+  def self.ca_engine?
+    defined?(CircleAdvanced::Volume) && CircleAdvanced::Volume.respond_to?(:from_curve) ? true : false
   end
 
   # Solid Progress: every broken circle of +solid+. Returns a summary.
@@ -36,27 +50,121 @@ module CircleMasterTests
     text
   end
 
-  # Cylinder Resize: cylinders found once, then each one with a broken end
-  # circle rebuilt at its own radii (as Resizer.resize does). Returns a
-  # summary.
-  def self.run_cr(solid)
+  # Circle Master, as Resizer.resize does: cylinders found once, then each
+  # one with a broken end circle rebuilt natively, at its radii plus +delta+.
+  def self.run_cm_cylinders(solid, delta)
     ents = inner(solid)
     cylinders, _rejected = CircleMaster::Detector.from_faces(ents.grep(Sketchup::Face))
     broken = cylinders.select { |cyl| cyl.loops.any? { |l| l.arc.nil? } }
     rebuilt = 0
     reasons = Hash.new(0)
     broken.each do |cyl|
-      reason = CircleMaster::Rebuilder.unsupported_reason(cyl)
+      body, reason = CircleMaster::Resizer.rebuild_body(cyl)
+      unless body
+        reasons[reason] += 1
+        next
+      end
+      plan = cyl.loops.map { |l| [l, l.radius + delta] }
+      radii = body.loops.map { |bl| CircleMaster::Resizer.radius_at(plan, bl.center) }
+      CircleMaster::Volume.rebuild(ents, body, radii: radii)
+      rebuilt += 1
+    end
+    cylinders_summary(cylinders, broken, rebuilt, reasons)
+  end
+
+  # Cylinder Resize 0.3.0 as installed, the same way.
+  def self.run_cr_cylinders(solid, delta)
+    ents = inner(solid)
+    cylinders, _rejected = CylinderResize::Detector.from_faces(ents.grep(Sketchup::Face))
+    broken = cylinders.select { |cyl| cyl.loops.any? { |l| l.arc.nil? } }
+    rebuilt = 0
+    reasons = Hash.new(0)
+    broken.each do |cyl|
+      reason = CylinderResize::Rebuilder.unsupported_reason(cyl)
       if reason
         reasons[reason] += 1
         next
       end
-      CircleMaster::Rebuilder.rebuild(ents, cyl, cyl.loops.map(&:radius))
+      CylinderResize::Rebuilder.rebuild(ents, cyl, cyl.loops.map { |l| l.radius + delta })
       rebuilt += 1
     end
+    cylinders_summary(cylinders, broken, rebuilt, reasons)
+  end
+
+  def self.cylinders_summary(cylinders, broken, rebuilt, reasons)
     text = "#{cylinders.length} cylinder(s), #{broken.length} broken, #{rebuilt} rebuilt"
     text += " (refused: #{reasons.map { |r, n| "#{r}: #{n}" }.join(', ')})" unless reasons.empty?
     text
+  end
+
+  # Segment count change to +n+ from the native end circle centered at
+  # +center+, with +engine+ (CircleAdvanced::Volume or CircleMaster::Volume).
+  def self.run_segments(engine, solid, center, n)
+    ents = inner(solid)
+    curve = arcs_at(ents, center).first
+    raise 'no native circle at the given center' unless curve
+    body = engine.from_curve(curve)
+    if engine == CircleMaster::Volume
+      engine.rebuild(ents, body, segments: n)
+    else
+      engine.rebuild(ents, body, n)
+    end
+    "#{n} segments"
+  end
+
+  # Runs the two +engines+ ([[key, label, block], [key, label, block]],
+  # reference first, Circle Master second) on +solid+, each in an aborted
+  # operation. Checks and notes go to +c+; one report row is added.
+  def self.compare(c, model, solid, kind, name, engines)
+    before = shape_signature(solid)
+    results = {}
+    engines.each do |key, label, run|
+      model.start_operation('Circle Master tests — engine', true)
+      begin
+        started = Time.now
+        text = run.call
+        results[key] = { time: Time.now - started, text: text, sig: shape_signature(solid) }
+      rescue => e
+        results[key] = { error: "#{e.class}: #{e.message}" }
+      ensure
+        model.abort_operation
+      end
+      c.check(shape_signature(solid) == before, "#{kind}, #{label}: model restored after the run")
+      r = results[key]
+      if r[:error]
+        c.check(false, "#{kind}, #{label}: no exception", r[:error])
+        next
+      end
+      c.check(r[:sig][:manifold], "#{kind}, #{label}: still a solid")
+      c.note(format('%s, %s: %.2fs, %s; native arcs %d -> %d', kind, label, r[:time], r[:text],
+                    before[:arcs], r[:sig][:arcs]))
+    end
+    ref_key, ref_label = engines[0]
+    cm_key = engines[1][0]
+    ref = results[ref_key]
+    cm = results[cm_key]
+    same = ref[:sig] && cm[:sig] && ref[:sig] == cm[:sig] ? true : false
+    diff = ref[:sig] && cm[:sig] ? signature_diff(ref[:sig], cm[:sig]) : 'an engine failed'
+    c.check(same, "#{kind}: same result as #{ref_label}", diff)
+    time = ->(r) { r[:time] ? format('%.2fs', r[:time]) : 'error' }
+    arcs = ->(r) { r[:sig] ? r[:sig][:arcs].to_s : '-' }
+    abbr = ref_label.split.map { |w| w[0] }.join
+    engine_rows << format('%-9s %-38s %s  %s %-7s CM %-7s native arcs: before %d, %s %s, CM %s',
+                          kind, name, same ? 'SAME' : 'DIFF', abbr, time.call(ref), time.call(cm),
+                          before[:arcs], abbr, arcs.call(ref), arcs.call(cm))
+  end
+
+  # Plate of 100 x 100 x 20 mm with a native circle of radius 10 mm and 24
+  # segments on its top face, pushed by +depth+ (-20 mm: through hole,
+  # -10 mm: blind hole, +20 mm: pin). Returns [group, center of the circle
+  # on the top face].
+  def self.plate_with_circle(m, x, y, depth)
+    g = box(m.entities, x, y, 0, 100.mm, 100.mm, 20.mm)
+    center = pt(x + 50.mm, y + 50.mm, 20.mm)
+    edges = g.entities.add_circle(center, Z_AXIS, 10.mm, 24)
+    disc = g.entities.grep(Sketchup::Face).find { |f| f.outer_loop.edges.all? { |e| edges.include?(e) } }
+    disc.pushpull(depth)
+    [g, center]
   end
 
   # Explodes the native curves of +entities+ (all, or those centered at
@@ -74,66 +182,73 @@ module CircleMasterTests
   def self.define_engine_tests
     tests = self
     x0 = 0
-    y0 = 2000
+    y0 = 10_000.mm
+    step = 1000.mm # between two cases
 
-    # [name, booleans needed?, build(model, x, y) -> [base, [[op, tool], ...]]]
-    cases = [
+    # Broken solids: [name, booleans needed?, build(model, x, y) -> [base,
+    # [[op, tool], ...]]]
+    broken_cases = [
       ['exploded end circles', false, lambda do |m, x, y|
-        g = tests.cylinders(m.entities, [tests.pt(x + 5, y + 5, 0)], Z_AXIS, 1, 2)
+        g = tests.cylinders(m.entities, [tests.pt(x + 50.mm, y + 50.mm, 0)], Z_AXIS, 10.mm, 20.mm)
         tests.explode_circles(g.entities)
         [g, []]
       end],
       # Splitting an edge of a native circle keeps it native: the circles
       # are exploded first, as a boolean leaves them.
       ['exploded end circle with a split point', false, lambda do |m, x, y|
-        g = tests.cylinders(m.entities, [tests.pt(x + 5, y + 5, 0)], Z_AXIS, 1, 2)
+        g = tests.cylinders(m.entities, [tests.pt(x + 50.mm, y + 50.mm, 0)], Z_AXIS, 10.mm, 20.mm)
         tests.explode_circles(g.entities)
         edge = g.entities.grep(Sketchup::Edge).find do |e|
-          e.vertices.all? { |v| (v.position.z - 2).abs < 1e-6 } && e.faces.length == 2
+          e.vertices.all? { |v| (v.position.z.to_f - 20.mm.to_f).abs < 1e-6 } && e.faces.length == 2
         end
         edge.split(0.5)
         [g, []]
       end],
       ['plate with 20 holes', true, lambda do |m, x, y|
-        centers = (0...5).flat_map { |i| (0...4).map { |j| tests.pt(x + 4 + 8 * i, y + 4 + 8 * j, -1) } }
-        [tests.box(m.entities, x, y, 0, 40, 32, 2),
-         [['subtract', tests.cylinders(m.entities, centers, Z_AXIS, 0.8, 4)]]]
+        centers = (0...5).flat_map do |i|
+          (0...4).map { |j| tests.pt(x + (40 + 80 * i).mm, y + (40 + 80 * j).mm, -10.mm) }
+        end
+        [tests.box(m.entities, x, y, 0, 400.mm, 320.mm, 20.mm),
+         [['subtract', tests.cylinders(m.entities, centers, Z_AXIS, 8.mm, 40.mm)]]]
       end],
       ['holes near an edge', true, lambda do |m, x, y|
-        centers = [[1.15, 5], [5, 1.2], [10, 5], [15, 5]].map { |a, b| tests.pt(x + a, y + b, -1) }
-        [tests.box(m.entities, x, y, 0, 20, 10, 2),
-         [['subtract', tests.cylinders(m.entities, centers, Z_AXIS, 1, 4)]]]
+        centers = [[11.5, 50], [50, 12], [100, 50], [150, 50]].map { |a, b| tests.pt(x + a.mm, y + b.mm, -10.mm) }
+        [tests.box(m.entities, x, y, 0, 200.mm, 100.mm, 20.mm),
+         [['subtract', tests.cylinders(m.entities, centers, Z_AXIS, 10.mm, 40.mm)]]]
       end],
       ['truncated cones', true, lambda do |m, x, y|
-        cones = [[5, 5], [15, 5], [5, 15]].map { |a, b| tests.pt(x + a, y + b, -1) }
-        [tests.box(m.entities, x, y, 0, 20, 20, 3),
-         [['subtract', tests.cones(m.entities, cones, 1.5, 0.7, 5)],
-          ['subtract', tests.cylinders(m.entities, [tests.pt(x + 15, y + 15, -1)], Z_AXIS, 1, 5)]]]
+        cones = [[50, 50], [150, 50], [50, 150]].map { |a, b| tests.pt(x + a.mm, y + b.mm, -10.mm) }
+        hole = tests.pt(x + 150.mm, y + 150.mm, -10.mm)
+        [tests.box(m.entities, x, y, 0, 200.mm, 200.mm, 30.mm),
+         [['subtract', tests.cones(m.entities, cones, 15.mm, 7.mm, 50.mm)],
+          ['subtract', tests.cylinders(m.entities, [hole], Z_AXIS, 10.mm, 50.mm)]]]
       end],
       ['counterbores', true, lambda do |m, x, y|
-        holes = [5, 12, 19].map { |a| tests.pt(x + a, y + 5, -1) }
-        bores = holes.map { |p| tests.pt(p.x, p.y, 2) }
-        [tests.box(m.entities, x, y, 0, 24, 10, 3),
-         [['subtract', tests.cylinders(m.entities, bores, Z_AXIS, 2, 2)],
-          ['subtract', tests.cylinders(m.entities, holes, Z_AXIS, 1, 5)]]]
+        holes = [50, 120, 190].map { |a| tests.pt(x + a.mm, y + 50.mm, -10.mm) }
+        bores = holes.map { |p| tests.pt(p.x, p.y, 20.mm) }
+        [tests.box(m.entities, x, y, 0, 240.mm, 100.mm, 30.mm),
+         [['subtract', tests.cylinders(m.entities, bores, Z_AXIS, 20.mm, 20.mm)],
+          ['subtract', tests.cylinders(m.entities, holes, Z_AXIS, 10.mm, 50.mm)]]]
       end],
       ['pins added by union (one end broken)', true, lambda do |m, x, y|
-        centers = [[5, 5], [15, 5], [5, 15], [15, 15]].map { |a, b| tests.pt(x + a, y + b, 1) }
-        [tests.box(m.entities, x, y, 0, 20, 20, 2),
-         [['union', tests.cylinders(m.entities, centers, Z_AXIS, 1, 4)]]]
+        centers = [[50, 50], [150, 50], [50, 150], [150, 150]].map { |a, b| tests.pt(x + a.mm, y + b.mm, 10.mm) }
+        [tests.box(m.entities, x, y, 0, 200.mm, 200.mm, 20.mm),
+         [['union', tests.cylinders(m.entities, centers, Z_AXIS, 10.mm, 40.mm)]]]
       end],
       ['blind holes', true, lambda do |m, x, y|
-        centers = [[5, 5], [15, 5], [5, 15], [15, 15]].map { |a, b| tests.pt(x + a, y + b, 2) }
-        [tests.box(m.entities, x, y, 0, 20, 20, 4),
-         [['subtract', tests.cylinders(m.entities, centers, Z_AXIS, 1, 3)]]]
+        centers = [[50, 50], [150, 50], [50, 150], [150, 150]].map { |a, b| tests.pt(x + a.mm, y + b.mm, 20.mm) }
+        [tests.box(m.entities, x, y, 0, 200.mm, 200.mm, 40.mm),
+         [['subtract', tests.cylinders(m.entities, centers, Z_AXIS, 10.mm, 30.mm)]]]
       end]
     ]
 
-    cases.each_with_index do |(name, booleans, build), i|
+    broken_cases.each_with_index do |(name, booleans, build), i|
       test "E#{i + 1} Engines: #{name}", info: true do |c, model|
-        next c.skip('Solid Progress not installed in this SketchUp') unless tests.sp_version
+        unless tests.sp_version || tests.cr_engine?
+          next c.skip('neither Solid Progress nor Cylinder Resize installed in this SketchUp')
+        end
         next c.skip('no boolean here (SketchUp Pro or Solid for Maker needed)') if booleans && !tests.boolean_engine
-        base, steps = build.call(model, x0 + i * 250, y0)
+        base, steps = build.call(model, x0 + i * step, y0)
         definitions = model.definitions.to_a
         acc = base
         failed = nil
@@ -156,48 +271,72 @@ module CircleMasterTests
         next c.check(false, "boolean #{failed} failed (#{tests.boolean_engine})") if failed
         c.note("boolean: #{tests.boolean_engine}") unless steps.empty?
         c.check(acc.manifold?, 'broken solid is a solid')
-        before = tests.shape_signature(acc)
-        results = {}
-        [[:sp, 'Solid Progress'], [:cr, 'Cylinder Resize']].each do |key, label|
-          model.start_operation('Circle Master tests — engine', true)
-          begin
-            started = Time.now
-            text = key == :sp ? tests.run_sp(acc) : tests.run_cr(acc)
-            results[key] = { time: Time.now - started, text: text, sig: tests.shape_signature(acc) }
-          rescue => e
-            results[key] = { error: "#{e.class}: #{e.message}" }
-          ensure
-            model.abort_operation
-          end
-          c.check(tests.shape_signature(acc) == before, "#{label}: model restored after the run")
-          r = results[key]
-          if r[:error]
-            c.check(false, "#{label}: no exception", r[:error])
-            next
-          end
-          c.check(r[:sig][:manifold], "#{label}: still a solid")
-          c.note(format('%s: %.2fs, %s; native arcs %d -> %d', label, r[:time], r[:text],
-                        before[:arcs], r[:sig][:arcs]))
+        if tests.sp_version
+          tests.compare(c, model, acc, 'repair', name,
+                        [[:sp, 'Solid Progress', -> { tests.run_sp(acc) }],
+                         [:cm, 'Circle Master', -> { tests.run_cm_cylinders(acc, 0) }]])
         end
-        sp = results[:sp]
-        cr = results[:cr]
-        same = sp[:sig] && cr[:sig] && sp[:sig] == cr[:sig] ? true : false
-        diff = sp[:sig] && cr[:sig] ? tests.signature_diff(sp[:sig], cr[:sig]) : 'an engine failed'
-        c.check(same, 'same result (faces, edges, circles, volume, materials)', diff)
-        time = ->(r) { r[:time] ? format('%.2fs', r[:time]) : 'error' }
-        arcs = ->(r) { r[:sig] ? r[:sig][:arcs].to_s : '-' }
-        tests.engine_rows << format('%-40s %s  SP %-7s CR %-7s native arcs: before %d, SP %s, CR %s',
-                                    name, same ? 'SAME' : 'DIFF', time.call(sp), time.call(cr),
-                                    before[:arcs], arcs.call(sp), arcs.call(cr))
+        if tests.cr_engine?
+          tests.compare(c, model, acc, 'radius', name,
+                        [[:cr, 'Cylinder Resize', -> { tests.run_cr_cylinders(acc, RADIUS_DELTA) }],
+                         [:cm, 'Circle Master', -> { tests.run_cm_cylinders(acc, RADIUS_DELTA) }]])
+        end
       end
     end
 
-    # E9: segment count change of Circle Advanced (Volume), on its own.
-    test 'E9 Circle Advanced engine: cylinder 24 -> 48 segments' do |c, model|
-      x = x0 + cases.length * 250
-      center = tests.pt(x + 5, y0 + 5, 0)
-      top = tests.pt(center.x, center.y, 2)
-      g = tests.cylinders(model.entities, [center], Z_AXIS, 1, 2, 24)
+    # Native solids, segment count changes: [name, build(model, x, y) ->
+    # [group, center of the native end circle to start from]]
+    native_cases = [
+      ['cylinder', lambda do |m, x, y|
+        center = tests.pt(x + 50.mm, y + 50.mm, 0)
+        [tests.cylinders(m.entities, [center], Z_AXIS, 10.mm, 20.mm), center]
+      end],
+      ['through hole in a plate', ->(m, x, y) { tests.plate_with_circle(m, x, y, -20.mm) }],
+      ['blind hole', ->(m, x, y) { tests.plate_with_circle(m, x, y, -10.mm) }],
+      ['pin on a plate', ->(m, x, y) { tests.plate_with_circle(m, x, y, 20.mm) }],
+      ['truncated cone', lambda do |m, x, y|
+        center = tests.pt(x + 50.mm, y + 50.mm, 0)
+        [tests.cones(m.entities, [center], 15.mm, 7.mm, 30.mm), center]
+      end],
+      ['colored cylinder (front and back)', lambda do |m, x, y|
+        center = tests.pt(x + 50.mm, y + 50.mm, 0)
+        g = tests.cylinders(m.entities, [center], Z_AXIS, 10.mm, 20.mm)
+        wall = tests.material(m, 'CM Test Wall', [200, 60, 60])
+        back = tests.material(m, 'CM Test Back', [60, 200, 60])
+        top = tests.material(m, 'CM Test Top', [60, 60, 200])
+        g.entities.grep(Sketchup::Face).each do |f|
+          if !f.normal.parallel?(Z_AXIS)
+            f.material = wall
+            f.back_material = back
+          elsif f.normal.z > 0
+            f.material = top
+          end
+        end
+        [g, center]
+      end]
+    ]
+
+    native_cases.each_with_index do |(name, build), i|
+      test "N#{i + 1} Engines, segments: #{name}", info: true do |c, model|
+        next c.skip('Circle Advanced not installed in this SketchUp') unless tests.ca_engine?
+        g, center = build.call(model, x0 + i * step, y0 + 2 * step)
+        c.check(g.manifold?, 'native solid is a solid')
+        [48, 12].each do |n|
+          tests.compare(c, model, g, 'segments', "#{name}, 24 -> #{n}",
+                        [[:ca, 'Circle Advanced', -> { tests.run_segments(CircleAdvanced::Volume, g, center, n) }],
+                         [:cm, 'Circle Master', -> { tests.run_segments(CircleMaster::Volume, g, center, n) }]])
+        end
+      end
+    end
+
+    # E9: segment count change of Circle Master (Volume), on its own.
+    test 'E9 Circle Master engine: cylinder 24 -> 48 segments' do |c, model|
+      x = x0 + broken_cases.length * step
+      r = 10.mm
+      h = 20.mm
+      center = tests.pt(x + 50.mm, y0 + 50.mm, 0)
+      top = tests.pt(center.x, center.y, h)
+      g = tests.cylinders(model.entities, [center], Z_AXIS, r, h, 24)
       ents = g.entities
       wall_mat = tests.material(model, 'CM Test Wall', [200, 60, 60])
       top_mat = tests.material(model, 'CM Test Top', [60, 60, 200])
@@ -213,7 +352,7 @@ module CircleMasterTests
       started = Time.now
       begin
         body = CircleMaster::Volume.from_curve(curve)
-        CircleMaster::Volume.rebuild(ents, body, 48)
+        CircleMaster::Volume.rebuild(ents, body, segments: 48)
         model.commit_operation
       rescue
         model.abort_operation
@@ -223,7 +362,7 @@ module CircleMasterTests
       ends = [center, top].map { |p| tests.arcs_at(ents, p) }
       c.check(ends.all? { |a| a.length == 1 && a.first.count_edges == 48 }, 'both ends: one native circle of 48',
               ends.map { |a| a.map(&:count_edges) }.inspect)
-      expected = 48 / 2.0 * Math.sin(2 * Math::PI / 48) * 2
+      expected = 48 / 2.0 * Math.sin(2 * Math::PI / 48) * r.to_f**2 * h.to_f
       c.check((g.volume - expected).abs < expected * 1e-4, 'volume of a 48-sided prism',
               "#{g.volume.round(5)} / #{expected.round(5)}")
       c.check(g.manifold?, 'still a solid')
@@ -234,9 +373,9 @@ module CircleMasterTests
       c.check(tops.length == 1 && tops.first.material == top_mat, 'top face: material kept')
     end
 
-    # E10: radius change of Cylinder Resize on a broken cylinder, through
-    # Resizer.resize (active context: the model).
-    test 'E10 Cylinder Resize engine: broken cylinder, 50 -> 52 mm' do |c, model|
+    # E10: radius change of a broken cylinder through Resizer.resize (active
+    # context: the model).
+    test 'E10 Circle Master resizing: broken cylinder, 50 -> 52 mm' do |c, model|
       base = tests.slot(6)
       top = tests.pt(base.x, base.y, 20.mm)
       tests.add_cylinder(model.entities, base, Z_AXIS, 25.mm, 20.mm, 24)

@@ -85,7 +85,7 @@ module CircleMaster
           if body.is_a?(Fillet::Body)
             Fillet.rebuild(entities, body, n)
           else
-            Volume.rebuild(entities, body, n)
+            Volume.rebuild(entities, body, segments: n)
           end
         end
       end
@@ -179,7 +179,7 @@ module CircleMaster
       return nil if inward.length.to_f < 1e-9
       len = p1.distance(p2).to_f
       [0.05, 0.01, 0.002].each do |k|
-        d = [len * k, Volume::BASE_TOL * 2].max
+        d = [len * k, Chains::BASE_TOL * 2].max
         inside = face.classify_point(mid.offset(inward, d)) == Sketchup::Face::PointInside
         outside = face.classify_point(mid.offset(inward.reverse, d)) == Sketchup::Face::PointInside
         return :inner if inside && !outside

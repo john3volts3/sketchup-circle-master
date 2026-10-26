@@ -260,7 +260,7 @@ module CircleMasterTests
 
   # Origin of the geometry of test number +k+ (tests never touch each other).
   def self.slot(k)
-    pt(k * 300, 0, 0)
+    pt(k * 5000.mm, 0, 0)
   end
 
   def self.box(entities, x, y, z, w, d, h, material = nil)
@@ -292,7 +292,9 @@ module CircleMasterTests
       add_cylinder(g.entities, c, Z_AXIS, r1, h, segments)
       top = pt(c.x, c.y, c.z + h)
       ring = g.entities.grep(Sketchup::Edge).select do |e|
-        e.vertices.all? { |v| (v.position.z - top.z).abs < 1e-6 && v.position.distance(top) < r1 * 1.01 }
+        e.vertices.all? do |v|
+          (v.position.z.to_f - top.z.to_f).abs < 1e-6 && v.position.distance(top).to_f < r1 * 1.01
+        end
       end
       g.entities.transform_entities(Geom::Transformation.scaling(top, r2 / r1), ring)
     end
@@ -578,7 +580,8 @@ module CircleMasterTests
       c.notes.each { |n| lines << "      · #{n}" }
     end
     unless (@engine_rows || []).empty?
-      lines << 'ENGINES (Solid Progress / Cylinder Resize, same broken solid)'
+      lines << 'ENGINES (engine of origin / Circle Master on the same solid; ' \
+               'SP Solid Progress, CR Cylinder Resize, CA Circle Advanced)'
       @engine_rows.each { |row| lines << "      #{row}" }
     end
     lines << "FATAL #{@fatal}" if @fatal
