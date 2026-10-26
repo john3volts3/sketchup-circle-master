@@ -10,4 +10,4 @@
 - **DIRECTIVES_BUNDLE.md** — Noms, fonctions à reprendre (et ce qu'il ne faut pas ajouter), structure cible, doublons à résoudre avec preuve (analyseur, moteur de reconstruction, réglage diamètre/rayon), passage depuis les anciens plugins, tests, documentation, ordre de travail, règles.
 - **PRD.md** — Exigences EF-01 à EF-10, NF-01 à NF-06, critères d'acceptation, questions ouvertes Q-1 à Q-4, décisions.
 - **FSD.md** — Plan, à rédiger pendant la construction.
-- Pas encore de dépôt git ni de code.
+- **Dépôt git** initialisé à la demande de l'utilisateur (`.gitignore` repris de Solid Progress : `build/`, `tools/tests/results/`, `*.skb`, `mes tests/`) ; premier commit `14d9836` ; dépôt GitHub **privé** `sketchup-circle-master` créé et poussé. Pas encore de code.
