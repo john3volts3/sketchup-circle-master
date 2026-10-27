@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.0 — 2026-10-27
+
+- New **Resize Cylinders…** window (replaces the former input box):
+  - **Segments** field, filled with the current segment count;
+  - **Step** buttons, **+0.05 to +0.3** and **-0.05 to -0.3** (model units): one click adds the
+    step to each selected cylinder from its own size and closes the window — handy for the fits
+    of 3D printed parts. On the diameter or the radius, as chosen in *Mode*;
+  - only the fields you change are applied (confirming the displayed size, rounded, no longer
+    shifts it slightly); the displayed value follows the mode (diameter or radius);
+  - errors are shown in the window, which stays open.
+- Automatic test battery: SketchUp 2021 Pro 46/46, SketchUp Make 2017 44/44.
+
 ## 1.0.1 — 2026-10-27
 
 - Fixed: a new segment count on a rounded corner was refused ("The rounded corner could not be

@@ -12,7 +12,8 @@ des cylindres lisses même après l'extrusion.
   **coin arrondi** d'un volume — grisé dans *Infos sur l'entité*.
 - **Remettre trous et tenons à la taille exacte** : sélectionnez la paroi, tapez `5,2` ou `+0,2` ;
   les deux bouts changent, la face hôte et ses matériaux restent intacts. Taille et segments
-  ensemble : `5,2;48s`.
+  ensemble : `5,2;48s`. Ou, dans la fenêtre **Resize Cylinders…**, un clic sur un bouton de
+  **pas** (+0.05 à +0.3, -0.05 à -0.3) pour ajuster un emboîtement.
 - Les **cercles cassés** (coupés par une opération sur les solides, éclatés ou soudés) sont
   **reconstruits en cercles natifs** pendant le redimensionnement : l'inférence du centre et *Infos
   sur l'entité* fonctionnent à nouveau.
@@ -42,6 +43,7 @@ SketchUp Pro. L'interface de l'extension est en anglais.
 | Tracer un cercle de Ø 25 | **Circle**, clic sur le centre, tapez `25`, Entrée |
 | Lisser un cylindre extrudé | Sélectionnez un cercle d'extrémité, **Circle**, tapez `64s` — ou sélectionnez sa paroi, **Cylinder Resize Tool**, tapez `64s` |
 | Trou au jeu d'impression | **Cylinder Resize Tool**, clic sur la paroi du trou, tapez `5,2` (ou `+0,2`) |
+| Ajuster un emboîtement en un clic | Sélectionnez la paroi du trou ou du tenon, **Resize Cylinders…**, cliquez sur **+0.2** (ou un autre pas) |
 | Taille et segments d'un coup | `5,2;48s` |
 
 | Saisie | Effet |

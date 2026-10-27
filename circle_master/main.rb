@@ -5,12 +5,9 @@ require 'sketchup.rb'
 
 module CircleMaster
   FILES = %w[settings vcb_parser chains volume fillet resegmenter circle_tool settings_dialog
-             cylinders/detector cylinders/resizer cylinders/resize_tool].freeze
+             resize_dialog cylinders/detector cylinders/resizer cylinders/resize_tool].freeze
 
   FILES.each { |f| Sketchup.require(File.join(PLUGIN_DIR, f)) }
-
-  # Mode field of the Resize Cylinders dialog (common input mode).
-  DIALOG_MODES = %w[Diameter Radius].freeze
 
   def self.icon(name)
     File.join(PLUGIN_DIR, 'icons', name)
@@ -47,33 +44,26 @@ module CircleMaster
       return
     end
 
-    mode = Settings.diameter_mode? ? DIALOG_MODES.first : DIALOG_MODES.last
-    radius = cylinders.first.radius
-    # Text field (not a Length) so that "+1" stays an increment.
-    current = Sketchup.format_length(mode == 'Radius' ? radius : radius * 2.0)
-    cones = cylinders.count(&:cone?)
-    title = "#{PLUGIN_NAME} — #{cylinders.length} cylinder(s)"
-    title += ", #{cones} cone(s)" if cones > 0
-    input = UI.inputbox(%w[Mode Value], [mode, current], [DIALOG_MODES.join('|'), ''], title)
-    return unless input
+    ResizeDialog.show(cylinders, rejected)
+  end
 
-    begin
-      # The mode is the common setting: the Circle tool follows it too.
-      Settings.input_mode = input[0].to_s.downcase unless input[0] == mode
-      change = VcbParser.parse(input[1].to_s)
-      return unless Resizer.confirm_cones(cylinders, change)
-      count, native, welded = Resizer.resize(cylinders, change)
-      status = "#{PLUGIN_NAME} — #{count} cylinder(s) resized: #{VcbParser.describe(change)}"
-      status += Resizer.repair_note(native, welded)
-      status += " (#{rejected.length} ignored: #{rejected.uniq.join(', ')})" unless rejected.empty?
-      Sketchup.status_text = status
-      puts "[#{PLUGIN_NAME}] #{status.sub("#{PLUGIN_NAME} — ", '')}"
-    rescue ArgumentError => e
-      UI.messagebox("#{PLUGIN_NAME} — #{e.message}", MB_OK)
-    rescue => e
-      puts "[#{PLUGIN_NAME}] Error: #{e.message}"
-      UI.messagebox("#{PLUGIN_NAME} — Error: #{e.message}", MB_OK)
-    end
+  # Input of the Resize Cylinders dialog: +mode+ ('diameter' or 'radius')
+  # and +text+ in the syntax of the Measurements box. Returns false when the
+  # user keeps the cones at the question (nothing changed). Raises
+  # ArgumentError when nothing was changed (invalid input, segment count
+  # refused); other errors abort the operation.
+  def self.resize_cylinders(cylinders, rejected, mode, text)
+    # The mode is the common setting: the Circle tool follows it too.
+    Settings.input_mode = mode unless mode == Settings.input_mode
+    change = VcbParser.parse(text)
+    return false unless Resizer.confirm_cones(cylinders, change)
+    count, native, welded = Resizer.resize(cylinders, change)
+    status = "#{PLUGIN_NAME} — #{count} cylinder(s) resized: #{VcbParser.describe(change)}"
+    status += Resizer.repair_note(native, welded)
+    status += " (#{rejected.length} ignored: #{rejected.uniq.join(', ')})" unless rejected.empty?
+    Sketchup.status_text = status
+    puts "[#{PLUGIN_NAME}] #{status.sub("#{PLUGIN_NAME} — ", '')}"
+    true
   end
 
   def self.show_settings
@@ -106,7 +96,7 @@ module CircleMaster
     cmd_dialog.tooltip = 'Resize Cylinders…'
     cmd_dialog.status_bar_text =
       'Resize the selected cylinders or cones: type a new diameter or radius, +1 / -0.1, ' \
-      'or 36s (segments).'
+      'or 36s (segments); one-click steps from -0.3 to +0.3.'
 
     cmd_tool = UI::Command.new('Cylinder Resize Tool') { activate_resize_tool }
     cmd_tool.small_icon = icon('resize_tool_16.png')

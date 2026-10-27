@@ -153,6 +153,9 @@ module CircleMasterTests
     model.select_tool(nil)
     close_all(model)
     model.selection.clear
+    # Resize Cylinders window left open by a failed test.
+    dialog = CircleMaster::ResizeDialog.instance_variable_get(:@dialog)
+    dialog.close if dialog && dialog.visible?
     settings = CircleMaster::Settings
     @saved_state[:settings].each { |v, value| settings.instance_variable_set(v, value) }
     CircleMaster::CircleTool.previous = @saved_state[:previous]
@@ -254,6 +257,12 @@ module CircleMasterTests
     UI.define_singleton_method(:inputbox) do |*_args|
       tests.inputs.shift || false
     end
+    # HtmlDialog#show_modal does not return before the window is closed
+    # (SketchUp 2021, Windows): the Resize Cylinders window is shown modeless
+    # so that the next steps of the test can fill it in.
+    html = UI::HtmlDialog
+    html.send(:alias_method, :cm_tests_show_modal, :show_modal) unless html.method_defined?(:cm_tests_show_modal)
+    html.send(:define_method, :show_modal) { show }
     su = Sketchup.singleton_class
     su.send(:alias_method, :cm_tests_status_text=, :status_text=) unless su.method_defined?(:cm_tests_status_text=)
     Sketchup.define_singleton_method(:status_text=) do |text|
@@ -283,6 +292,7 @@ module CircleMasterTests
     ui = UI.singleton_class
     ui.send(:alias_method, :messagebox, :cm_tests_messagebox)
     ui.send(:alias_method, :inputbox, :cm_tests_inputbox)
+    UI::HtmlDialog.send(:alias_method, :show_modal, :cm_tests_show_modal)
     su = Sketchup.singleton_class
     su.send(:alias_method, :status_text=, :cm_tests_status_text=)
     su.send(:alias_method, :vcb_label=, :cm_tests_vcb_label=)

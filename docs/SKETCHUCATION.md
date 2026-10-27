@@ -14,7 +14,7 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 
 - **PluginStore identifier:** `Circle_Master` (page `https://sketchucation.com/pluginstore?pln=Circle_Master` once published)
 - **Plugin name:** Circle Master
-- **Version:** 1.0.1
+- **Version:** 1.1.0
 - **Short description (255 chars max):** Circle tool that keeps your segment count from one session to the next and takes a diameter or a radius. Change the segments and size of circles inside volumes: cylinders, holes, pins, rounded corners, even after booleans. Free.
 - **Usage:** Extensions > Circle Master (menu and toolbar)
 - **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
@@ -53,6 +53,7 @@ Once a circle has been extruded, Entity Info greys out its segment count. Circle
 - **Cylinders, holes and pins**: select one end circle, type `64s` — both ends get 64 segments.
 - **Rounded corners** of a volume, outer or inner: select one of its arcs, type `16s` — the curved wall is rebuilt, the neighboring faces stay tangent.
 - **Exact sizes**: with the Cylinder Resize Tool, click the wall of a hole or a pin and type `5.2`, `+0.2` or `5.2;48s` (size and segments at once). Both ends change; the face around keeps its edges and materials.
+- **Fits in one click**: select the wall of a hole or a pin, open **Resize Cylinders…** and click a **step** button, **+0.05 to +0.3** or **-0.05 to -0.3**; a Segments field is there too.
 - **Broken circles** (cut by solid tools, exploded or welded) are rebuilt as native circles while resizing.
 
 {img}cm_resize.png{/img}
@@ -60,7 +61,7 @@ Once a circle has been extruded, Entity Info greys out its segment count. Circle
 ### Features
 
 - **Circle** tool replacing the native one: diameter input, your segment count, inferences, arrow keys to lock the axis, click-click or click-drag; resizes and re-segments existing circles and arcs; copies of a circle (Ctrl); repeat the previous circle (double-click).
-- **Resize Cylinders…** (dialog) and **Cylinder Resize Tool** (interactive): several holes or pins at once, absolute size, increment (`+0.2`, `-0.1`, `+r0.5`) and segment count; truncated cones kept or made straight.
+- **Resize Cylinders…** (dialog) and **Cylinder Resize Tool** (interactive): several holes or pins at once, absolute size, increment (`+0.2`, `-0.1`, `+r0.5`) and segment count; truncated cones kept or made straight. The dialog also has one-click steps from -0.3 to +0.3, on the diameter or the radius.
 - **Settings…**: default segment count, diameter or radius input.
 - Decimal point or comma, whatever the Windows settings; one undo step per action.
 - Pure Ruby, no dependencies; does not need SketchUp Pro.
@@ -69,8 +70,8 @@ Once a circle has been extruded, Entity Info greys out its segment count. Circle
 
 | SketchUp | Status |
 |---|---|
-| Pro 2021 (tested with 21.0.391) | Automatic test battery: 45/45 |
-| Make 2017 (tested with 17.2.2555) | Automatic test battery: 43/43 (2 cases need SketchUp 2020.1+: a circle that cannot be rebuilt is left as edges instead of being welded) |
+| Pro 2021 (tested with 21.0.391) | Automatic test battery: 46/46 |
+| Make 2017 (tested with 17.2.2555) | Automatic test battery: 44/44 (2 cases need SketchUp 2020.1+: a circle that cannot be rebuilt is left as edges instead of being welded) |
 
 Windows. Other versions from 2017 on should work but are not tested; macOS not tested. SketchUp Make is licensed by Trimble for non-commercial use only. The interface of the extension is in English.
 
@@ -99,6 +100,7 @@ Circle Master brings together two earlier extensions of the same author, Circle 
 3. Smooth an extruded cylinder or a hole: select one of its end circles, click **Circle**, type `64s`, Enter.
 4. Smooth a rounded corner: select one of its arcs, click **Circle**, type `16s`, Enter.
 5. Hole at the printing clearance: **Cylinder Resize Tool**, click the wall of the hole, type `5.2` (or `+0.2`), Enter.
+6. Adjust a fit in one click: select the wall of the hole or pin, **Resize Cylinders…**, click **+0.2** (or another step).
 
 ---
 
@@ -111,7 +113,7 @@ Full user manual on GitHub: [English](https://github.com/john3volts3/sketchup-ci
 | Command | What it does |
 |---|---|
 | **Circle** | Draws circles (diameter input, your segment count); with circles or arcs selected, changes their size or segment count, including the end circle of a cylinder and the arcs of a rounded corner |
-| **Resize Cylinders…** | Dialog: resizes the cylinders whose side wall is selected |
+| **Resize Cylinders…** | Dialog: resizes the cylinders whose side wall is selected: new size, segment count, or one click on a step from -0.3 to +0.3 (model units, on the diameter or the radius) |
 | **Cylinder Resize Tool** | The same, interactively: click a cylinder wall, type the new size |
 | **Settings…** | Default segment count, diameter or radius input, coordinate mode |
 
@@ -160,6 +162,10 @@ Lengths use the model units; a unit may be typed (`50mm`). Decimal point or comm
 ---
 
 ## Release Notes
+
+**v1.1.0** (2026-10-27)
+- New Resize Cylinders… window: Segments field, and Step buttons from -0.3 to +0.3 that resize in one click (fits of 3D printed parts)
+- Only the fields you change are applied; errors are shown in the window
 
 **v1.0.1** (2026-10-27)
 - Fixed: a new segment count on a rounded corner, a cylinder, a hole or a pin was refused when another circle touched it (two tangent holes, or a hole tangent to the extension of a rounded corner); nothing was changed, the model was never damaged

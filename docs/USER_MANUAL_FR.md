@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 1.0.1
+Version 1.1.0
 
 ## 1. Présentation
 
@@ -20,7 +20,7 @@ Elle compte quatre commandes, dans le menu *Extensions → Circle Master* et la 
 | Commande | Rôle |
 |----------|------|
 | **Circle** | Remplace l'outil Cercle natif : saisie en diamètre, 48 segments par défaut et mémorisés ; redimensionne aussi les cercles et arcs existants et change leur nombre de segments, y compris le cercle d'extrémité d'un cylindre et le coin arrondi d'un volume |
-| **Resize Cylinders…** | Fenêtre : redimensionne les cylindres dont la paroi est sélectionnée (diamètre, rayon, incrément, nombre de segments) |
+| **Resize Cylinders…** | Fenêtre : redimensionne les cylindres dont la paroi est sélectionnée (diamètre, rayon, incrément, nombre de segments, pas en un clic de -0.3 à +0.3) |
 | **Cylinder Resize Tool** | La même chose, en interactif : clic sur la paroi d'un cylindre, puis saisie de la nouvelle taille |
 | **Settings…** | Nombre de segments par défaut, saisie en diamètre ou en rayon, mode de coordonnées |
 
@@ -192,7 +192,24 @@ cercle.
 1. Sélectionnez la paroi d'un ou de plusieurs cylindres (un clic sur la surface latérale lisse ;
    Maj/Ctrl pour en ajouter).
 2. *Extensions → Circle Master → Resize Cylinders…* (ou le 2e bouton de la barre d'outils).
-3. Choisissez **Diameter** ou **Radius** (c'est le réglage commun, § 9), tapez la valeur, OK.
+3. La fenêtre affiche le nombre de cylindres (et de cônes), la taille du premier dans le **Mode**
+   choisi et son nombre de **Segments** (vide, « mixed », si les cylindres sélectionnés n'ont pas
+   tous le même).
+4. Au choix :
+   - changez **Value** et/ou **Segments**, puis **OK** (*Entrée*) : seuls les champs modifiés sont
+     appliqués ; **Value** accepte tout ce qui figure dans « Ce que vous pouvez taper » plus bas ;
+   - ou cliquez sur l'un des boutons **Step**, **+0.05 à +0.3** ou **-0.05 à -0.3** : le pas est
+     ajouté à chaque cylindre depuis sa propre taille, avec le nouveau nombre de segments si vous
+     l'avez changé, et la fenêtre se ferme. Pratique pour les emboîtements des pièces imprimées en
+     3D (jeu d'un trou ou d'un tenon) ou pour corriger une taille.
+
+Le **Mode** (**Diameter** ou **Radius**, le réglage commun, § 9) décide à quoi s'appliquent la
+valeur et les pas : en mode *Radius*, `+0.2` ajoute 0,2 au rayon, donc 0,4 au diamètre. Les pas
+sont en **unités du modèle** : le titre du cadre les indique, par exemple *Step (diameter, mm)*.
+Changer de mode fait passer la valeur affichée du diamètre au rayon. Une étape d'annulation par OK
+ou par clic ; un tronc de cône reste un cône avec un pas (sans question). Une erreur (taille nulle
+ou négative, nombre de segments refusé) s'affiche en rouge dans la fenêtre, qui reste ouverte ;
+*Cancel* ou *Échap* la ferme sans rien changer.
 
 ### Cylinder Resize Tool (interactif)
 

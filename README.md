@@ -12,6 +12,8 @@ even after the extrusion.
   corner** of a volume — greyed out in *Entity Info*.
 - **Resize holes and pins to an exact size**: select the wall, type `5.2` or `+0.2`; both ends
   change, the host face and its materials stay intact. Size and segments together: `5.2;48s`.
+  Or, in the **Resize Cylinders…** window, one click on a **step** button (+0.05 to +0.3,
+  -0.05 to -0.3) to adjust a fit.
 - **Broken circles** (cut by a solid operation, exploded or welded) are **rebuilt as native
   circles** while resizing: center inference and *Entity Info* work again.
 - Resize and re-segment existing circles and arcs, place **copies** of a circle (Ctrl), repeat the
@@ -38,6 +40,7 @@ The extension interface is in English.
 | Draw a Ø 25 circle | **Circle**, click the center, type `25`, Enter |
 | Smooth an extruded cylinder | Select one of its end circles, **Circle**, type `64s` — or select its wall, **Cylinder Resize Tool**, type `64s` |
 | Hole at the printing clearance | **Cylinder Resize Tool**, click the hole wall, type `5.2` (or `+0.2`) |
+| Adjust a fit in one click | Select the hole or pin wall, **Resize Cylinders…**, click **+0.2** (or another step) |
 | Size and segments at once | `5.2;48s` |
 
 | Input | Effect |

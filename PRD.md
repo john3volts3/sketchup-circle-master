@@ -2,7 +2,7 @@
 
 > Le *quoi* et le *pourquoi*. Le *comment* sera dans `FSD.md`. Directives de construction : `DIRECTIVES_BUNDLE.md`.
 
-Dernière mise à jour : 2026-10-27 (livraison 1.0.1).
+Dernière mise à jour : 2026-10-27 (livraison 1.1.0).
 
 ## 1. Contexte et problème
 
@@ -48,6 +48,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | EF-10 | Réglages repris de Circle Advanced (`CircleAdvanced`) et de Cylinder Resize (`CylinderResize`) tant qu'ils ne sont pas changés dans Circle Master | Im | livrée en v1.0.0 |
 | EF-12 | **Nombre de segments dans les commandes de cylindres** (*Cylinder Resize Tool*, *Resize Cylinders…*) : `36s`, `15;36s`, `+0,2;48s` ; cylindre natif ou cassé reconstruit en natif, une étape d'annulation ; refus motivé sans rien modifier si un cylindre ne peut pas être reconstruit | Im | livrée en v1.0.0 |
 | EF-11 | **Point ou virgule décimale** dans toutes les saisies (zone Mesures, fenêtre *Resize Cylinders…*), quel que soit le séparateur décimal du PC (`7.5` et `7,5`) | Im | livrée en v1.0.0 |
+| EF-13 | **Fenêtre *Resize Cylinders…* : champ Segments et boutons Step** (demande du 2026-10-27, pour ajuster les emboîtements en impression 3D, ou corriger une taille) : champ du nombre de segments pré-rempli ; 12 boutons +0.05, +0.1, +0.15, +0.2, +0.25, +0.3 et -0.05 à -0.3 ; un clic applique le pas à chaque cylindre depuis sa propre taille (avec les segments s'ils ont été changés) et ferme la fenêtre ; pas sur le diamètre ou le rayon selon le *Mode* ; pas en unités du modèle ; seuls les champs modifiés sont appliqués ; erreurs affichées dans la fenêtre | Im | livrée en v1.1.0 |
 
 ## 6. Exigences non fonctionnelles
 
@@ -76,11 +77,14 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | CA-05 | Réglages des anciens plugins repris au premier lancement | EF-10 |
 | CA-07 | `7.5` et `7,5` acceptés et égaux, sur un PC à virgule et sur un PC à point (cas de l'analyseur avec le vrai `to_l`) | EF-11 |
 | CA-08 | Cylindre Ø 50 à 24 segments → `15;36s` : Ø 15 et 36 segments, cercles natifs ; un cylindre non reconstructible dans la sélection → rien n'est modifié, message avec la raison | EF-12 |
+| CA-09 | Cylindre Ø 10 : bouton +0.2 → Ø 10,2 en un clic, fenêtre fermée ; -0.05 → Ø 10,15 ; mode *Radius* + bouton +0.1 → rayon + 0,1 ; Segments 36 + bouton → taille et 36 segments ; tronc de cône + bouton → reste un cône sans question ; taille négative → message dans la fenêtre, rien de modifié | EF-13 |
 | CA-06 | Batterie verte sous 2021 Pro et Make 2017 | NF-04, NF-06 |
 
 Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 à C7, M1 à M6, F1 à F3, K1, K2, D1), CA-02 (R1), CA-03 (R5, E1 à E8), CA-04 et CA-07 (P1, 92 cas avec le vrai `to_l`), CA-06 (2021 Pro 42/42, Make 2017 40/40 avec C7 et R7 sautés : SketchUp 2020.1+), CA-08 (S5, R5, R8 à R10). CA-05 (D3, 6 contrôles : anciennes sections lues, priorités, écriture dans CircleMaster seulement). Batterie de livraison : 2021 Pro 43/43, Make 2017 41/41 (C7 et R7 sautés).
 
 Vérification du 2026-10-27 (1.0.1) : F4 (coin arrondi à côté d'un trou tangent au prolongement de son cercle) et R11 (deux trous tangents) pour EF-01 et EF-12 ; batterie 2021 Pro 45/45, Make 2017 43/43 (C7 et R7 sautés).
+
+Vérification du 2026-10-27 (1.1.0) : CA-09 par R12 (14 contrôles, vraie fenêtre pilotée en JavaScript) ; R1 et R10 refaits sur la nouvelle fenêtre (CA-02, CA-08) ; batterie 2021 Pro 46/46, Make 2017 44/44 (C7 et R7 sautés ; N1 à N8 sautés : Circle Advanced désinstallé) ; test de l'utilisateur dans SketchUp 2021 : OK.
 
 ## 9. Questions ouvertes et décisions
 
@@ -114,6 +118,7 @@ Vérification du 2026-10-27 (1.0.1) : F4 (coin arrondi à côté d'un trou tange
 | 2026-10-26 | Champ *Mode* de la fenêtre Resize Cylinders | Lu dans le réglage commun et écrit s'il change : l'outil Circle suit le choix fait dans la fenêtre |
 | 2026-10-26 | Reprise de `input_mode` | Lu dans `CircleMaster`, sinon `CircleAdvanced/input_mode`, sinon `CylinderResize/mode` : Circle Advanced l'emporte si les deux anciens diffèrent |
 | 2026-10-27 | Cercle voisin compté avec le cercle reconstruit (trouvé en faisant les images de publication) | Corrigé en 1.0.1 **avant la publication sur SketchUcation**, pour les coins arrondis et les cylindres (demande de l'utilisateur) : une arête n'est retenue que si elle appartient à une `ArcCurve` centrée sur le cercle. Pas de décalage automatique de la géométrie (proposé puis écarté : il changerait les cotes, et 0,001 mm resterait dans la tolérance de 0,5 % du rayon) |
+| 2026-10-27 | Fenêtre *Resize Cylinders…* (EF-13) | `UI.inputbox` remplacée par une `UI::HtmlDialog` (seule façon d'avoir des boutons). Choix de l'utilisateur : un clic sur un bouton applique et ferme ; le pas suit le *Mode* (diamètre ou rayon) ; pas en **unités du modèle** (pas forcés en mm) ; cadre nommé **Step** (« Clearance » écarté : pas seulement pour les jeux, aussi pour corriger des problèmes de SketchUp). Ajouté sans demande : seuls les champs modifiés sont appliqués, la valeur affichée suit le mode |
 | 2026-10-27 | Versions annoncées | **SU 2017 à SU 2027** cochées sur SketchUcation par l'auteur, après une vérification théorique (versions de Ruby, notes de version de l'API, code passé sous Ruby 3.3 ; détail dans le FSD) ; testées : Make 2017 et Pro 2021 seulement (SketchUp 2023 du PC : licence expirée). NF-06 reformulée |
 
 ## 10. Historique des livraisons
@@ -122,3 +127,4 @@ Vérification du 2026-10-27 (1.0.1) : F4 (coin arrondi à côté d'un trou tange
 |---|---|---|
 | 2026-10-26 | 1.0.0 (tag `v1.0.0`, dépôt privé) | EF-01 à EF-12, NF-01 à NF-06 ; batterie 2021 Pro et Make 2017 |
 | 2026-10-27 | 1.0.1 (tag `v1.0.1`, dépôt public) | Correctif d'EF-01 (segments d'un coin arrondi) et d'EF-12 / segments d'une extrémité de cylindre : cercle voisin tangent ; batterie 2021 Pro 45/45, Make 2017 43/43 |
+| 2026-10-27 | 1.1.0 (tag `v1.1.0`) | EF-13 (fenêtre *Resize Cylinders…* : champ Segments, boutons Step) ; batterie 2021 Pro 46/46, Make 2017 44/44 |

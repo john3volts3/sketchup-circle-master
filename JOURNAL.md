@@ -200,3 +200,30 @@
 - **Test utilisateur** : SketchUp démarre normalement, seul Circle Master apparaît dans le menu *Extensions*.
 - **Raccourci C** réassigné par l'utilisateur à `Extensions/Circle Master/Circle` dans SketchUp 2017 et 2021 ; vérifié en lecture seule (registre de 2017, `SharedPreferences.json` de 2021). L'ancien raccourci de `Extensions/Cylinder Resize/Cylinder Resize Tool` reste, inactif.
 - **PRD.md** — Décision.
+
+### Fenêtre Resize Cylinders : champ Segments et boutons Step (1.1.0, en cours)
+
+- **Demande utilisateur** : dans la fenêtre *Resize Cylinders…*, ajouter un champ pour le nombre de segments et une série de boutons +0,05 à +0,3 et −0,05 à −0,3, pratiques pour ajuster les emboîtements en impression 3D. Choix de l'utilisateur : un clic applique et ferme la fenêtre ; le pas suit le champ *Mode* (diamètre ou rayon) ; valeurs en unités du modèle ; cadre nommé **Step** et non « Clearance » (pas seulement des jeux : aussi pour corriger des problèmes de SketchUp).
+- **Constat** : la fenêtre était un `UI.inputbox`, qui n'accepte pas de boutons ; remplacée par une `UI::HtmlDialog` (SketchUp 2017+, comme la fenêtre Settings).
+- **circle_master/html/resize.html** (créé) — Mode (Diameter/Radius), Value, Segments, cadre *Step (diameter, mm)* avec 12 boutons, aide, erreurs dans la fenêtre, OK/Cancel, Entrée/Échap. La valeur affichée suit le mode tant qu'elle n'est pas modifiée ; seuls les champs modifiés sont appliqués (revalider la taille affichée, arrondie, ne la décale plus) ; segments laissés vides (« mixed ») si les cylindres sélectionnés n'en ont pas tous le même nombre ; un seul envoi à la fois (double clic sans effet).
+- **circle_master/resize_dialog.rb** (créé) — Module `ResizeDialog` (sur le modèle de `settings_dialog.rb`), ouverture par `show_modal`, valeurs initiales, unité du modèle (`UnitsOptions['LengthUnit']`), saisie construite dans la syntaxe de la zone Mesures (`+0.2;36s`). Erreur de saisie ou refus avant toute modification (`ArgumentError`) : message dans la fenêtre, qui reste ouverte ; cônes gardés à la question : fenêtre ouverte ; erreur pendant l'opération (annulée) : fenêtre fermée, boîte de message comme avant.
+- **circle_master/main.rb** — `resize_selection` : même détection, ouvre `ResizeDialog` ; la partie « appliquer » devient `CircleMaster.resize_cylinders` (mêmes lignes) ; `resize_dialog` ajouté à `FILES` ; `DIALOG_MODES` retiré (inutilisé) ; aide de la barre d'état du bouton.
+- **circle_master/version.rb** — `1.1.0`.
+- **tools/tests/command_cases.rb** — Aides `resize_dialog`, `in_resize_dialog`, `js_set`, `js_click` ; R1 et R10 pilotent la vraie fenêtre en JavaScript (comme D1) ; nouveau R12 (boutons +0.2, −0.05, mode Radius, Segments + bouton, erreur affichée, Cancel, cône gardé sans question).
+- **tools/tests/run_tests.rb** — Fenêtre Resize Cylinders fermée entre deux tests ; `HtmlDialog#show_modal` remplacé par `show` pendant les tests.
+- **Constat (1er passage de la batterie, SketchUp 2021)** : `HtmlDialog#show_modal` ne rend la main à Ruby qu'à la fermeture de la fenêtre (Windows) ; l'étape suivante du test n'était jamais programmée, la fenêtre restait ouverte (fermée à la main par l'utilisateur : R1, R10, R12 en échec, tous les autres tests passés). Sans effet pour l'utilisateur (les rappels de la fenêtre fonctionnent pendant l'attente) ; d'où le remplacement par `show` dans l'automate.
+- Vérifications hors SketchUp (dossier de travail) : logique de la page avec un faux DOM sous Node (25 contrôles) et de `ResizeDialog` avec des substituts sous Ruby 3.3 (11 contrôles) : tout passe ; `ruby -wc` sur les fichiers modifiés : OK.
+- **tools/tests/command_cases.rb** — Lecture des champs de la fenêtre par le test (R12) : la fonction de rappel `cm_tests_values` est ajoutée juste après l'ouverture, avant le chargement de la page (ajoutée après, elle n'existe pas côté JavaScript : 3 lectures vides au 2e passage).
+- **Batterie SketchUp 2021 Pro** : 46/46 (R1, R10, R12 compris) ; N1 à N8 sautés (Circle Advanced désinstallé : comparaison des moteurs de segments impossible). Le script de test a déployé la 1.1.0 dans le dossier Plugins de SketchUp 2021.
+- **Batterie SketchUp Make 2017** (Ruby 2.2.4) : 44/44 (R1, R10, R12 compris) ; C7, R7 sautés (2020.1+), N1 à N8 sautés (Circle Advanced désinstallé). La fenêtre HtmlDialog fonctionne aussi dans le navigateur intégré de 2017. Déployée dans le dossier Plugins de Make 2017 par le script de test.
+- **Test utilisateur** (SketchUp 2021) : « Teste OK » (cylindre Ø 10, +0.2, puis Segments 36 et −0.05, Ctrl+Z).
+
+### Livraison 1.1.0
+
+- **Demande utilisateur** : livraison complète (docs, `.rbz`, commit, tag, release GitHub) et mise à jour de la page SketchUcation dans la même livraison.
+- **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md** — Version 1.1.0 ; tableau des commandes ; § 7 *Resize Cylinders…* : valeurs affichées, champs modifiés seuls appliqués, boutons Step (diamètre ou rayon selon le mode, unités du modèle, une étape d'annulation, cônes gardés), erreurs dans la fenêtre, Cancel/Échap.
+- **README.md**, **README.fr.md** — Boutons de pas dans la présentation ; ligne « Ajuster un emboîtement en un clic » dans la prise en main.
+- **CHANGELOG.md** — Entrée 1.1.0. **PRD.md** — EF-13 « livrée en v1.1.0 », critère CA-09, vérification, décision (fenêtre HtmlDialog, choix de l'utilisateur, nom *Step*), historique des livraisons. **FSD.md** — État, section « Fenêtre *Resize Cylinders…* », interface, tests (R1, R10, R12, `show_modal` → `show`), résultats, structure des fichiers, historique.
+- **docs/SKETCHUCATION.md** — Version 1.1.0, *Overview* (réglages en un clic, résultats 46/46 et 44/44), *Start* (étape 6), *Documentation* (commande Resize Cylinders…), *Release Notes* v1.1.0.
+- Contrôles : `ruby -wc` sur le chargeur et les 14 fichiers du plugin ; `vcb_parser_cases.rb` hors SketchUp : 88/88.
+- `build/circle_master.rbz` 1.1.0 : 27 fichiers (les 25 de la 1.0.1 + `resize_dialog.rb`, `html/resize.html`), chemins en `/` ; identique octet pour octet aux copies testées dans SketchUp 2021 et Make 2017 ; l'ancien gardé en `build/circle_master-1.0.1.rbz` (hors git).

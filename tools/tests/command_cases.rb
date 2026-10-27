@@ -6,10 +6,10 @@
 # picked point and the face under it), then the tool events are called
 # (onMouseMove, onLButtonDown/Up, onLButtonDoubleClick); keys: onKeyDown,
 # onKeyUp, onCancel; Cylinder Resize Tool: the face under the cursor is
-# given by the test (pick_face). Dialogs: UI.inputbox and UI.messagebox are
-# answered by the runner; the Settings window is really opened and filled
-# in through JavaScript. SketchUp's own inference engine and what is drawn
-# on screen are not tested.
+# given by the test (pick_face). Dialogs: UI.messagebox is answered by the
+# runner; the Settings and Resize Cylinders windows are really opened and
+# filled in through JavaScript. SketchUp's own inference engine and what is
+# drawn on screen are not tested.
 #
 # C Circle tool, M modify mode, F rounded corners, K copy mode and
 # double-click, R cylinder resizing, X robustness, D dialogs and interface
@@ -115,6 +115,41 @@ module CircleMasterTests
     tool = CircleMaster::ResizeTool.new
     model.select_tool(tool)
     tool
+  end
+
+  # Last Resize Cylinders window opened.
+  def self.resize_dialog
+    CircleMaster::ResizeDialog.instance_variable_get(:@dialog)
+  end
+
+  # Values sent by the window through sketchup.cm_tests_values(...).
+  def self.dialog_values
+    @dialog_values ||= []
+  end
+
+  # Phases of +c+: opens the Resize Cylinders window on the selection, then,
+  # once its page is loaded, runs +script+ in it (fields, buttons).
+  def self.in_resize_dialog(c, script)
+    c.later do
+      CircleMaster.resize_selection # modeless during the tests (run_tests.rb)
+      # Added before the page is loaded: only then does JavaScript get it.
+      resize_dialog.add_action_callback('cm_tests_values') do |_ctx, *values|
+        dialog_values.replace(values.map(&:to_s))
+      end
+    end
+    c.later { nil } # page loading
+    c.later { nil }
+    c.later { resize_dialog.execute_script(script) }
+  end
+
+  # JavaScript: sets the field +id+ to +text+.
+  def self.js_set(id, text)
+    "document.getElementById(#{id.to_json}).value = #{text.to_json};"
+  end
+
+  # JavaScript: clicks the element matching the CSS +selector+.
+  def self.js_click(selector)
+    "document.querySelector(#{selector.to_json}).click();"
   end
 
   def self.mm_of(length)
@@ -651,27 +686,30 @@ module CircleMasterTests
 
     # --- Cylinder resizing (EF-02 to EF-06 of Circle Master) ----------------
 
-    test 'R1 Resize Cylinders dialog: 5,2 then +0,2, one undo step; Radius mode' do |c, model|
+    test 'R1 Resize Cylinders window: 5,2 then +0,2, one undo step; Radius mode' do |c, model|
       base = tests.slot(24)
       top = tests.pt(base.x, base.y, 10.mm)
       tests.add_cylinder(model.entities, base, Z_AXIS, 2.5.mm, 10.mm, 24)
       tests.select(model, tests.walls_at(model.entities, base, 2.5.mm))
-      tests.inputs << %w[Diameter 5,2]
-      CircleMaster.resize_selection
-      got = tests.circles_at(model.entities, base, top)
-      c.check(got == [[[2.6, 24]], [[2.6, 24]]], 'diameter 5 -> 5,2: both ends native, exact', got.inspect)
+      tests.in_resize_dialog(c, tests.js_set('value', '5,2') + tests.js_click('#ok'))
       c.later do
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[2.6, 24]], [[2.6, 24]]], 'diameter 5 -> 5,2: both ends native, exact', got.inspect)
+        c.check(!tests.resize_dialog.visible?, 'OK: window closed')
         Sketchup.undo
         got = tests.circles_at(model.entities, base, top)
         c.check(got == [[[2.5, 24]], [[2.5, 24]]], 'one undo step: diameter 5 again', got.inspect)
         tests.select(model, tests.walls_at(model.entities, base, 2.5.mm))
-        tests.inputs << %w[Diameter +0,2]
-        CircleMaster.resize_selection
+      end
+      tests.in_resize_dialog(c, tests.js_set('value', '+0,2') + tests.js_click('#ok'))
+      c.later do
         got = tests.circles_at(model.entities, base, top)
         c.check(got == [[[2.6, 24]], [[2.6, 24]]], '+0,2: diameter 5,2', got.inspect)
         tests.select(model, tests.walls_at(model.entities, base, 2.6.mm))
-        tests.inputs << %w[Radius 3]
-        CircleMaster.resize_selection
+      end
+      tests.in_resize_dialog(c, 'document.getElementsByName("mode")[1].click();' +
+                                tests.js_set('value', '3') + tests.js_click('#ok'))
+      c.later do
         got = tests.circles_at(model.entities, base, top)
         c.check(got == [[[3.0, 24]], [[3.0, 24]]], 'Mode Radius, 3: radius 3 mm', got.inspect)
         c.check(CircleMaster::Settings.input_mode == 'radius' && tests.writes.include?('CircleMaster/input_mode'),
@@ -920,20 +958,22 @@ module CircleMasterTests
       c.check(got == [[[11.0, 24]]] * 4, 'size alone (22): both resized', got.inspect)
     end
 
-    test 'R10 Resize Cylinders dialog: 36s, then 12;36s; one undo step' do |c, model|
+    test 'R10 Resize Cylinders window: Segments 36, then 12;36s; one undo step' do |c, model|
       base = tests.slot(37)
       top = tests.pt(base.x, base.y, 20.mm)
       tests.add_cylinder(model.entities, base, Z_AXIS, 25.mm, 20.mm, 24)
       tests.select(model, tests.walls_at(model.entities, base, 25.mm))
-      tests.inputs << %w[Diameter 36s]
-      CircleMaster.resize_selection
-      got = tests.circles_at(model.entities, base, top)
-      c.check(got == [[[25.0, 36]], [[25.0, 36]]], '36s: 36 segments', got.inspect)
-      tests.select(model, tests.walls_at(model.entities, base, 25.mm))
-      tests.inputs << %w[Diameter 12;36s]
-      CircleMaster.resize_selection
-      got = tests.circles_at(model.entities, base, top)
-      c.check(got == [[[6.0, 36]], [[6.0, 36]]], '12;36s: diameter 12, 36 segments', got.inspect)
+      tests.in_resize_dialog(c, tests.js_set('segments', '36') + tests.js_click('#ok'))
+      c.later do
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[25.0, 36]], [[25.0, 36]]], 'Segments 36: 36 segments, same size', got.inspect)
+        tests.select(model, tests.walls_at(model.entities, base, 25.mm))
+      end
+      tests.in_resize_dialog(c, tests.js_set('value', '12;36s') + tests.js_click('#ok'))
+      c.later do
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[6.0, 36]], [[6.0, 36]]], '12;36s in Value: diameter 12, 36 segments', got.inspect)
+      end
       c.later do
         Sketchup.undo
         got = tests.circles_at(model.entities, base, top)
@@ -977,6 +1017,80 @@ module CircleMasterTests
         ok = c.check(got == [[[20.0, n]]] * 2 + [[[20.0, 48]]] * 2,
                      "#{label}, #{text}: hole a #{n} segments, hole b untouched", got.inspect)
         tests.note_feedback(c) unless ok
+      end
+    end
+
+    # R12 (1.1.0, EF-13): step buttons of the Resize Cylinders window,
+    # in model units (mm here), on the diameter or the radius as the Mode.
+    test 'R12 Resize Cylinders window: step buttons, Mode, Segments, error, cone kept' do |c, model|
+      base = tests.slot(40)
+      top = tests.pt(base.x, base.y, 10.mm)
+      cone = base.offset(X_AXIS, 200.mm)
+      cone_top = tests.pt(cone.x, cone.y, 10.mm)
+      tests.add_cylinder(model.entities, base, Z_AXIS, 5.mm, 10.mm, 24)
+      tests.add_cone(model.entities, cone, 5.mm, 4.mm, 10.mm)
+      walls = -> { tests.walls_at(model.entities, base, 5.4.mm) }
+      shown = tests.dialog_values
+      shown.clear
+      read = 'sketchup.cm_tests_values(document.getElementById("value").value, ' \
+             'document.getElementById("segments").value, document.getElementById("step").textContent, ' \
+             'document.getElementById("error").textContent);'
+      tests.select(model, walls.call)
+      tests.in_resize_dialog(c, read)
+      c.later do
+        expected = [Sketchup.format_length(10.mm), '24', 'Step (diameter, mm)', '']
+        c.check(shown == expected, 'shows the diameter, 24 segments, step on the diameter in mm', shown.inspect)
+        tests.resize_dialog.execute_script(tests.js_click('[data-delta="+0.2"]'))
+      end
+      c.later do
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[5.1, 24]], [[5.1, 24]]], '+0.2: diameter 10.2 in one click', got.inspect)
+        c.check(!tests.resize_dialog.visible?, '+0.2: window closed')
+        tests.select(model, walls.call)
+      end
+      tests.in_resize_dialog(c, tests.js_click('[data-delta="-0.05"]'))
+      c.later do
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[5.075, 24]], [[5.075, 24]]], '-0.05: diameter 10.15', got.inspect)
+        tests.select(model, walls.call)
+      end
+      tests.in_resize_dialog(c, 'document.getElementsByName("mode")[1].click();' + read)
+      c.later do
+        expected = [Sketchup.format_length(5.075.mm), '24', 'Step (radius, mm)', '']
+        c.check(shown == expected, 'Mode Radius: the value shows the radius, step on the radius', shown.inspect)
+        tests.resize_dialog.execute_script(tests.js_click('[data-delta="+0.1"]'))
+      end
+      c.later do
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[5.175, 24]], [[5.175, 24]]], 'Radius, +0.1: radius 5.175', got.inspect)
+        c.check(CircleMaster::Settings.input_mode == 'radius', 'the window mode is the common setting')
+        tests.select(model, walls.call)
+      end
+      tests.in_resize_dialog(c, tests.js_set('segments', '36') + tests.js_click('[data-delta="+0.2"]'))
+      c.later do
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[5.375, 36]], [[5.375, 36]]], 'Segments 36 and +0.2: radius 5.375, 36 segments', got.inspect)
+        tests.select(model, walls.call)
+      end
+      tests.in_resize_dialog(c, tests.js_set('value', '-20') + tests.js_click('#ok'))
+      c.later { tests.resize_dialog.execute_script(read) }
+      c.later do
+        c.check(shown.last.to_s.include?('zero or negative'), '-20: error shown in the window', shown.inspect)
+        c.check(tests.resize_dialog.visible?, 'error: the window stays open')
+        got = tests.circles_at(model.entities, base, top)
+        c.check(got == [[[5.375, 36]], [[5.375, 36]]], 'error: nothing changed', got.inspect)
+        tests.resize_dialog.execute_script(tests.js_click('#cancel'))
+      end
+      c.later do
+        c.check(!tests.resize_dialog.visible?, 'Cancel: window closed')
+        tests.messages.clear
+        tests.select(model, tests.walls_at(model.entities, cone, 5.mm))
+      end
+      tests.in_resize_dialog(c, tests.js_click('[data-delta="+0.2"]'))
+      c.later do
+        got = tests.circles_at(model.entities, cone, cone_top)
+        c.check(got == [[[5.2, 24]], [[4.2, 24]]], 'cone, Radius +0.2: still a cone (both ends +0.2)', got.inspect)
+        c.check(tests.messages.empty?, 'no question asked', tests.messages.inspect)
       end
     end
 

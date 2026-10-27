@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 1.0.1
+Version 1.1.0
 
 ## 1. Overview
 
@@ -20,7 +20,7 @@ toolbar:
 | Command | What it does |
 |---------|--------------|
 | **Circle** | Replaces the native Circle tool: diameter input, 48 segments by default and remembered; also resizes existing circles and arcs and changes their segment count, including the end circle of a cylinder and the rounded corner of a volume |
-| **Resize Cylinders…** | Dialog: resizes the cylinders whose side wall is selected (diameter, radius, increment, segment count) |
+| **Resize Cylinders…** | Dialog: resizes the cylinders whose side wall is selected (diameter, radius, increment, segment count, one-click steps from -0.3 to +0.3) |
 | **Cylinder Resize Tool** | The same, interactively: click a cylinder wall, type the new size |
 | **Settings…** | Default segment count, diameter or radius input, coordinate mode |
 
@@ -188,7 +188,23 @@ countersinks qualify. Select or click its **side wall**, not a circle.
 1. Select the wall(s) of one or more cylinders (one click on the smooth side surface; Shift/Ctrl
    for more).
 2. *Extensions → Circle Master → Resize Cylinders…* (or the 2nd toolbar button).
-3. Choose **Diameter** or **Radius** (this is the common setting, § 9), type the value, OK.
+3. The window shows the number of cylinders (and cones), the size of the first one in the chosen
+   **Mode** and its **Segments** count (empty, "mixed", when the selected cylinders differ).
+4. Either:
+   - change **Value** and/or **Segments**, then **OK** (*Enter*): only the fields you changed are
+     applied; **Value** accepts everything listed under "What you can type" below;
+   - or click one of the **Step** buttons, **+0.05 to +0.3** or **-0.05 to -0.3**: the step is
+     added to each cylinder from its own size, with the new segment count if you changed it, and
+     the window closes. Handy for the fits of 3D printed parts (clearance of a hole or a pin) or
+     to correct a size.
+
+**Mode** (**Diameter** or **Radius**, the common setting, § 9) decides what the value and the
+steps apply to: in *Radius* mode, `+0.2` adds 0.2 to the radius, so 0.4 to the diameter. The
+steps are in **model units**: the frame title shows them, e.g. *Step (diameter, mm)*. Changing
+the mode switches the displayed value between diameter and radius. One undo step per OK or per
+click; a truncated cone stays a cone with a step (no question). An error (size zero or negative,
+segment count refused) is shown in red in the window, which stays open; *Cancel* or *Esc* closes
+it without changing anything.
 
 ### Cylinder Resize Tool (interactive)
 

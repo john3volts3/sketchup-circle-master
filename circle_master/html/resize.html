@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Circle Master — Resize Cylinders</title>
+<style>
+  body {
+    font-family: "Segoe UI", Tahoma, Helvetica, Arial, sans-serif;
+    font-size: 13px;
+    margin: 0;
+    padding: 14px 16px;
+    background: #f3f3f3;
+    color: #222;
+  }
+  h1 { font-size: 14px; margin: 0 0 12px; }
+  .row { display: flex; align-items: center; margin-bottom: 10px; }
+  .row .field { width: 80px; flex: none; }
+  .row label.choice { margin-right: 16px; }
+  input[type=text] { width: 120px; padding: 3px 4px; font-size: 13px; }
+  fieldset { border: 1px solid #ccc; padding: 6px 10px 8px; margin: 4px 0 12px; }
+  legend { padding: 0 4px; }
+  .deltas { display: flex; margin: 4px 0; }
+  .deltas button { flex: 1; min-width: 0; margin: 0 2px; padding: 4px 0; }
+  .hint { font-size: 11px; color: #555; line-height: 1.4; margin-bottom: 10px; }
+  .hint code { background: #e4e4e4; padding: 0 3px; border-radius: 2px; }
+  fieldset .hint { margin: 6px 2px 0; }
+  #error { color: #b00020; min-height: 16px; margin-bottom: 6px; }
+  .buttons { text-align: right; }
+  button { min-width: 80px; padding: 4px 10px; margin-left: 6px; font-size: 13px; }
+</style>
+</head>
+<body>
+<form id="form" autocomplete="off">
+  <h1 id="info">Circle Master</h1>
+
+  <div class="row">
+    <span class="field">Mode</span>
+    <label class="choice"><input type="radio" name="mode" value="diameter"> Diameter</label>
+    <label class="choice"><input type="radio" name="mode" value="radius"> Radius</label>
+  </div>
+
+  <div class="row">
+    <label class="field" for="value">Value</label>
+    <input id="value" type="text">
+  </div>
+
+  <div class="row">
+    <label class="field" for="segments">Segments</label>
+    <input id="segments" type="text">
+  </div>
+
+  <fieldset>
+    <legend id="step">Step</legend>
+    <div class="deltas">
+      <button type="button" data-delta="+0.05">+0.05</button>
+      <button type="button" data-delta="+0.1">+0.1</button>
+      <button type="button" data-delta="+0.15">+0.15</button>
+      <button type="button" data-delta="+0.2">+0.2</button>
+      <button type="button" data-delta="+0.25">+0.25</button>
+      <button type="button" data-delta="+0.3">+0.3</button>
+    </div>
+    <div class="deltas">
+      <button type="button" data-delta="-0.05">-0.05</button>
+      <button type="button" data-delta="-0.1">-0.1</button>
+      <button type="button" data-delta="-0.15">-0.15</button>
+      <button type="button" data-delta="-0.2">-0.2</button>
+      <button type="button" data-delta="-0.25">-0.25</button>
+      <button type="button" data-delta="-0.3">-0.3</button>
+    </div>
+    <div class="hint">
+      One click applies the step to each cylinder (from its own size), with the
+      segment count if changed, and closes the window.
+    </div>
+  </fieldset>
+
+  <div class="hint">
+    Value: <code>15</code> size, <code>r7.5</code> radius, <code>d15</code> diameter,
+    <code>+1</code> / <code>-0.1</code> increment, <code>36s</code> segments.
+    Only the fields you change are applied.
+  </div>
+
+  <div id="error"></div>
+
+  <div class="buttons">
+    <button type="button" id="cancel">Cancel</button>
+    <button type="submit" id="ok">OK</button>
+  </div>
+</form>
+
+<script>
+  // Current size of the first cylinder in each mode, as shown in Value.
+  var sizes = { diameter: '', radius: '' };
+  var initialSegments = '';
+  var unit = '';
+  var minSeg = 3, maxSeg = 999;
+  // Set once the input is sent, until Ruby answers (no double apply).
+  var busy = false;
+
+  function setValues(v) {
+    sizes.diameter = v.diameter;
+    sizes.radius = v.radius;
+    unit = v.unit;
+    minSeg = v.min; maxSeg = v.max;
+    document.getElementById('info').textContent = v.info;
+    var radios = document.getElementsByName('mode');
+    for (var i = 0; i < radios.length; i++) {
+      radios[i].checked = (radios[i].value === v.mode);
+      radios[i].addEventListener('change', modeChanged);
+    }
+    initialSegments = v.segments === null ? '' : String(v.segments);
+    var segments = document.getElementById('segments');
+    segments.value = initialSegments;
+    if (initialSegments === '') { segments.placeholder = 'mixed'; }
+    var value = document.getElementById('value');
+    value.value = sizes[selectedMode()];
+    updateStep();
+    value.focus();
+    value.select();
+  }
+
+  // Shows +msg+ ('' clears it) and accepts a new input.
+  function showError(msg) {
+    busy = false;
+    document.getElementById('error').textContent = msg;
+  }
+
+  function selectedMode() {
+    var radios = document.getElementsByName('mode');
+    for (var i = 0; i < radios.length; i++) {
+      if (radios[i].checked) { return radios[i].value; }
+    }
+    return 'diameter';
+  }
+
+  // Value not edited: it follows the mode (diameter <-> radius).
+  function modeChanged() {
+    var value = document.getElementById('value');
+    var other = selectedMode() === 'radius' ? 'diameter' : 'radius';
+    if (value.value.trim() === sizes[other]) { value.value = sizes[selectedMode()]; }
+    updateStep();
+  }
+
+  function updateStep() {
+    document.getElementById('step').textContent =
+      'Step (' + selectedMode() + (unit ? ', ' + unit : '') + ')';
+  }
+
+  // Value to apply: '' when it still shows the current size.
+  function changedValue() {
+    var raw = document.getElementById('value').value.trim();
+    return raw === sizes[selectedMode()] ? '' : raw;
+  }
+
+  // Segment count to apply: '' when unchanged, null when invalid.
+  function changedSegments() {
+    var raw = document.getElementById('segments').value.trim();
+    if (raw === '' || raw === initialSegments) { return ''; }
+    var n = parseInt(raw, 10);
+    if (!/^\d+$/.test(raw) || n < minSeg || n > maxSeg) {
+      showError('Segments: integer from ' + minSeg + ' to ' + maxSeg + '.');
+      return null;
+    }
+    return String(n);
+  }
+
+  function apply(value) {
+    if (busy) { return; }
+    var segments = changedSegments();
+    if (segments === null) { return; }
+    busy = true;
+    document.getElementById('error').textContent = '';
+    sketchup.apply(selectedMode(), value, segments);
+  }
+
+  document.getElementById('form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    apply(changedValue());
+  });
+
+  var deltas = document.querySelectorAll('button[data-delta]');
+  for (var i = 0; i < deltas.length; i++) {
+    deltas[i].addEventListener('click', function () {
+      apply(this.getAttribute('data-delta'));
+    });
+  }
+
+  document.getElementById('cancel').addEventListener('click', function () {
+    sketchup.cancel();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.keyCode === 27) { sketchup.cancel(); }
+  });
+
+  window.addEventListener('load', function () { sketchup.ready(); });
+</script>
+</body>
+</html>
