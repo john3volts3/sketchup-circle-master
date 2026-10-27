@@ -198,4 +198,5 @@
 - **Circle Re-Segment** désinstallé à son tour (demande utilisateur) : même méthode, SketchUp 2017 et 2021 (absent de 2023), fichiers déplacés dans un dossier de sauvegarde local, contrôlés.
 - **Raccourci C** : à réassigner à `Extensions/Circle Master/Circle` par l'utilisateur lui-même (*Window > Preferences > Shortcuts*). Constaté en lecture seule : SketchUp 2017 garde ses raccourcis dans le registre (`Settings`, `Shortcut_34` = `Extensions/Circle Advanced/Circle`), SketchUp 2021 dans `SharedPreferences.json` (`%APPDATA%`), avec aussi l'ancien raccourci de `Extensions/Cylinder Resize/Cylinder Resize Tool` ; rien n'a été modifié.
 - **Test utilisateur** : SketchUp démarre normalement, seul Circle Master apparaît dans le menu *Extensions*.
+- **Raccourci C** réassigné par l'utilisateur à `Extensions/Circle Master/Circle` dans SketchUp 2017 et 2021 ; vérifié en lecture seule (registre de 2017, `SharedPreferences.json` de 2021). L'ancien raccourci de `Extensions/Cylinder Resize/Cylinder Resize Tool` reste, inactif.
 - **PRD.md** — Décision.
