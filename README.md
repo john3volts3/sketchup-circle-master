@@ -18,7 +18,8 @@ even after the extrusion.
   previous circle with a **double-click**.
 - Decimal point or comma, whatever the Windows settings; one undo step per action.
 
-Tested on **SketchUp 2021 Pro** and **SketchUp Make 2017** (Windows). Does not need SketchUp Pro.
+Tested on **SketchUp 2021 Pro** and **SketchUp Make 2017** (Windows). Expected to work on SketchUp
+2017 to 2027 (checked against the Ruby API release notes, not tested). Does not need SketchUp Pro.
 The extension interface is in English.
 
 ## Installation

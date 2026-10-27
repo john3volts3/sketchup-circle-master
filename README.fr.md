@@ -21,8 +21,9 @@ des cylindres lisses même après l'extrusion.
 - Point ou virgule décimale, quels que soient les réglages de Windows ; une étape d'annulation par
   action.
 
-Testé sous **SketchUp 2021 Pro** et **SketchUp Make 2017** (Windows). Ne demande pas SketchUp Pro.
-L'interface de l'extension est en anglais.
+Testé sous **SketchUp 2021 Pro** et **SketchUp Make 2017** (Windows). Devrait fonctionner de
+SketchUp 2017 à 2027 (vérifié d'après les notes de version de l'API Ruby, non testé). Ne demande pas
+SketchUp Pro. L'interface de l'extension est en anglais.
 
 ## Installation
 

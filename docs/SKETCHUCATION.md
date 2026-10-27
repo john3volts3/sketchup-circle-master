@@ -5,6 +5,8 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 > **2026-10-26**: GitHub repository made public (whole history checked first: no personal data). Images made (`docs/images/`, put together by `tools/demo/`). PluginStore entry `Circle_Master` created (Dev Tools > Edit > green **+**) and filled — Files: `Circle_Master.rbz` (1.0.0, the asset of the GitHub release), icon `Circle_Master.png` (54 px), article images `cm_segments.png`, `cm_settings.png`, `cm_resize.png` (690 px wide); Basic Info; Overview; Start; Documentation; Release Notes. Saved as a draft and checked by reloading the editor; **not published** (power button left to the author). Author Info left empty (personal data). No YouTube video yet.
 >
 > **2026-10-27**: version 1.0.1 (fix: a neighboring circle touching the rebuilt one). Draft updated: `Circle_Master.rbz` replaced with the asset of the GitHub release `v1.0.1` (Files > Remove & Update, then upload); Basic Info version 1.0.1; Overview test results 45/45 and 43/43; Documentation, limitation of circles that touch; Release Notes v1.0.1 above v1.0.0. Each tab saved and checked by reloading the editor; still **not published**.
+>
+> **2026-10-27**: published by the author. Compatibility boxes **SU 2017 to SU 2027** ticked by the author after a theoretical check of the versions (see `FSD.md`, "Compatibilité des versions"); saved state checked by reloading the editor.
 
 ---
 
@@ -15,7 +17,7 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 - **Version:** 1.0.1
 - **Short description (255 chars max):** Circle tool that keeps your segment count from one session to the next and takes a diameter or a radius. Change the segments and size of circles inside volumes: cylinders, holes, pins, rounded corners, even after booleans. Free.
 - **Usage:** Extensions > Circle Master (menu and toolbar)
-- **Compatibility:** SU 2017 (Make), SU 2021 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; other versions and macOS not tested
+- **Compatibility:** SU 2017, 2018, 2019, 2020, 2021/22, 2023, 2024, 2025, 2026, 2027 — tested with SketchUp Make 2017 and SketchUp Pro 2021 on Windows; the other versions checked against the Ruby API release notes, not tested; macOS not tested
 - **Dependencies:** None
 - **License:** Free (MIT)
 - **Support Link (More info button):** https://github.com/john3volts3/sketchup-circle-master

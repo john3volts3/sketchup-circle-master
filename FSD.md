@@ -146,6 +146,20 @@ Résultat du 2026-10-27 (1.0.1) : SketchUp 2021 Pro 45/45 ; Make 2017 43/43, C7 
 
 **Limite** : un arc dont les segments mesureraient moins de la tolérance de SketchUp (0,001″ = 0,025 mm) ne peut pas être tracé, même par les outils natifs (ex. quart de cercle de rayon 0,5 mm en 48 segments).
 
+## Compatibilité des versions de SketchUp (NF-04, NF-06)
+
+Testées : Make 2017 (17.2.2555) et Pro 2021 (21.0.391), Windows. Annoncées sur SketchUcation (cases cochées par l'auteur le 2026-10-27) : **SU 2017 à SU 2027**, d'après une vérification théorique du 2026-10-27 (seules 2017 et 2021 sont utilisables sur le PC de développement : la licence de SketchUp 2023 installée a expiré).
+
+| SketchUp | Ruby | Points vérifiés |
+|---|---|---|
+| 2017, 2018 | 2.2.4 | Testé en 2017 ; 2018 : même Ruby. `Entities#weld` (2020.1+) avec repli : un cercle non reconstructible reste en arêtes |
+| 2019, 2020 | 2.5 | Rien de concerné (unités affichées avec une espace depuis 2019 : déjà le cas en 2021, testé) |
+| 2021/22, 2023 | 2.7 | Testé en 2021 ; 2023 : `erase_entities` refuse d'effacer une entité du chemin d'édition ouvert (le plugin n'efface que des arêtes et faces du contexte actif) |
+| 2024 à 2026 | 3.2.2 | Aucune méthode retirée par Ruby 3 (`File.exists?`, `Fixnum`, `URI.escape`…) ; arguments nommés appelés par leur nom ; aucun `Struct` construit avec des mots-clés. 2025 : coordonnées d'écran en pixels logiques (seule la taille du petit cercle d'aperçu, `pixels_to_model`, peut changer sur un écran à haute résolution). 2026 : `line_width` (1 ou 3), transformations inversibles : valeurs déjà valides |
+| 2027 | 3.4.9 | Aucune bibliothèque sortie de Ruby 3.4 utilisée (seulement `json`) ; pas de `it` ; `add_circle` / `add_arc` à rayon nul renvoient une liste vide (taille 0 refusée par l'analyseur) |
+
+Contrôles faits : `ruby -wc` (Ruby 3.3) sur tous les fichiers sans avertissement ; `tools/tests/vcb_parser_cases.rb` hors SketchUp sous Ruby 3.3 avec les avertissements de dépréciation : 88/88. Sources : notes de version de l'API Ruby (ruby.sketchup.com), notes de SketchUp 2025 et 2026 (help.sketchup.com). macOS non testé.
+
 ## Structure des fichiers
 
 ```

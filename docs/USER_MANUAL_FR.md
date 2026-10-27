@@ -273,6 +273,9 @@ l'avertissement passe en rouge et une confirmation est demandée à l'enregistre
 
 - Testé sous **SketchUp 2021 Pro** et **SketchUp Make 2017**, Windows (batterie de tests
   automatique).
+- Devrait fonctionner de SketchUp 2017 à 2027 : vérifié d'après les notes de version de l'API Ruby
+  de SketchUp (Ruby 2.2 à 3.4), non testé. Avant 2020.1, un cercle qui ne peut pas être reconstruit
+  en cercle natif reste en arêtes séparées au lieu d'être soudé.
 - Ne demande pas SketchUp Pro : aucun outil Solides n'est utilisé.
 - Interface de l'extension en anglais.
 

@@ -58,7 +58,7 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 | NF-03 | Interface en anglais ; documentation utilisateur en anglais et en français |
 | NF-04 | SketchUp 2017 et suivants (Ruby 2.2) ; aucune dépendance ; ne demande pas SketchUp Pro |
 | NF-05 | Aucune donnée personnelle dans le dépôt, les fichiers de démonstration et les messages de commit |
-| NF-06 | Batterie de tests automatique (SketchUp 2021 Pro, Make 2017) ; versions annoncées = versions testées |
+| NF-06 | Batterie de tests automatique (SketchUp 2021 Pro, Make 2017). Versions annoncées : celles testées, plus celles vérifiées en théorie et dites « non testées » (décision du 2026-10-27 : 2017 à 2027) |
 
 ## 7. Contraintes et dépendances
 
@@ -113,6 +113,7 @@ Vérification du 2026-10-27 (1.0.1) : F4 (coin arrondi à côté d'un trou tange
 | 2026-10-26 | Champ *Mode* de la fenêtre Resize Cylinders | Lu dans le réglage commun et écrit s'il change : l'outil Circle suit le choix fait dans la fenêtre |
 | 2026-10-26 | Reprise de `input_mode` | Lu dans `CircleMaster`, sinon `CircleAdvanced/input_mode`, sinon `CylinderResize/mode` : Circle Advanced l'emporte si les deux anciens diffèrent |
 | 2026-10-27 | Cercle voisin compté avec le cercle reconstruit (trouvé en faisant les images de publication) | Corrigé en 1.0.1 **avant la publication sur SketchUcation**, pour les coins arrondis et les cylindres (demande de l'utilisateur) : une arête n'est retenue que si elle appartient à une `ArcCurve` centrée sur le cercle. Pas de décalage automatique de la géométrie (proposé puis écarté : il changerait les cotes, et 0,001 mm resterait dans la tolérance de 0,5 % du rayon) |
+| 2026-10-27 | Versions annoncées | **SU 2017 à SU 2027** cochées sur SketchUcation par l'auteur, après une vérification théorique (versions de Ruby, notes de version de l'API, code passé sous Ruby 3.3 ; détail dans le FSD) ; testées : Make 2017 et Pro 2021 seulement (SketchUp 2023 du PC : licence expirée). NF-06 reformulée |
 
 ## 10. Historique des livraisons
 

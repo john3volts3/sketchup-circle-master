@@ -265,6 +265,9 @@ is asked when saving a change.
 ## 10. Compatibility
 
 - Tested on **SketchUp 2021 Pro** and **SketchUp Make 2017**, Windows (automatic test battery).
+- Expected to work on SketchUp 2017 to 2027: checked against the release notes of the SketchUp
+  Ruby API (Ruby 2.2 to 3.4), not tested. Before 2020.1, a circle that cannot be rebuilt as a
+  native circle stays as separate edges instead of being welded.
 - Does not need SketchUp Pro: no solid tool is used.
 - Extension interface in English.
 
