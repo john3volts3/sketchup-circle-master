@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.1 — 2026-10-27
+
+- Fixed: a new segment count on a rounded corner was refused ("The rounded corner could not be
+  rebuilt, nothing was changed") when a hole of the same face touched the extension of the corner
+  circle, or came closer to it than 0.5 % of its radius.
+- Fixed: the same with a cylinder, a hole or a pin touching another one, for example two tangent
+  holes ("The cylinder could not be rebuilt, nothing was changed").
+- Cause: an edge of the neighboring circle was counted with the rebuilt circle, so the final check
+  refused and everything was undone. The model was never damaged.
+
 ## 1.0.0 — 2026-10-26
 
 First version: brings together **Circle Advanced 1.4.0** and **Cylinder Resize 0.3.0** in one

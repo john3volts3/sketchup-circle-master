@@ -557,6 +557,43 @@ module CircleMasterTests
       end
     end
 
+    # F4 (1.0.1): an edge of a hole touching the extension of the corner
+    # circle has both ends on that circle, within the tolerance; 1.0.0 took
+    # it for an edge of the rebuilt arc (17 edges instead of 16: refused).
+    test 'F4 Rounded corner, hole tangent to its circle: 6 -> 16 segments, hole untouched' do |c, model|
+      o = tests.slot(38)
+      h = 8.mm
+      center = tests.add_rounded_block(model.entities, o, 40.mm, 8.mm, h, 6)
+      top = tests.pt(center.x, center.y, center.z + h)
+      # Through hole of radius 7 mm at 15 mm (8 + 7) from the corner center,
+      # 64 segments: the tangent point lies between two of its vertices.
+      hole = tests.pt(center.x - 9.mm, center.y - 12.mm, center.z + h)
+      hole_bottom = tests.pt(hole.x, hole.y, center.z)
+      tests.push_circle(model.entities, hole, 7.mm, -h, 64)
+      got = tests.circles_at(model.entities, hole, hole_bottom)
+      next c.check(false, 'hole built', got.inspect) unless got == [[[7.0, 64]], [[7.0, 64]]]
+      arc = tests.arcs_at(model.entities, top).first
+      next c.check(false, 'rounded corner built') unless arc
+      tests.select(model, arc.edges)
+      tool, _ip = tests.circle_tool(model)
+      tests.status.clear
+      tests.messages.clear
+      diag = tests.watch_fillet_check
+      begin
+        tool.onUserText('16s', tests.view)
+      ensure
+        tests.unwatch_fillet_check
+      end
+      got = tests.circles_at(model.entities, center, top)
+      ok = c.check(got == [[[8.0, 16]], [[8.0, 16]]], 'both arcs: native, radius 8 mm, 16 segments', got.inspect)
+      unless ok
+        tests.note_feedback(c)
+        diag.each { |line| c.note("Fillet.check: #{line}") }
+      end
+      got = tests.circles_at(model.entities, hole, hole_bottom)
+      c.check(got == [[[7.0, 64]], [[7.0, 64]]], 'hole untouched: radius 7 mm, 64 segments', got.inspect)
+    end
+
     # --- Copy mode and double-click (EF-21, EF-22) ---------------------------
 
     test 'K1 Copy mode: Ctrl copies the selected circle, each click places one; = and Esc' do |c, model|
@@ -901,6 +938,45 @@ module CircleMasterTests
         Sketchup.undo
         got = tests.circles_at(model.entities, base, top)
         c.check(got == [[[25.0, 36]], [[25.0, 36]]], 'one undo step: back to diameter 50, 36 segments', got.inspect)
+      end
+    end
+
+    # R11 (1.0.1): an edge of a hole touching the rebuilt one has both ends
+    # on its circle, within the tolerance; 1.0.0 counted it with that circle
+    # ("The cylinder could not be rebuilt"). Holes of radius 20 mm: their
+    # facing edges stay 0.086 mm apart, inside the tolerance of Circle Master
+    # (0.1 mm) but far from the 0.001" at which SketchUp joins geometry (with
+    # radius 7 mm, 0.03 mm: joined or not depending on the position).
+    test 'R11 Tangent holes: 48s with Circle then 36s with Cylinder Resize Tool; the other hole untouched' do |c, model|
+      o = tests.slot(39)
+      tests.add_block(model.entities, o, 100.mm, 60.mm, 8.mm)
+      a = tests.pt(o.x + 30.mm, o.y + 30.mm, 8.mm)
+      # Hole b at 40 mm (20 + 20) from hole a, 48 segments: the tangent point
+      # lies between two of its vertices.
+      dir = 3.75.degrees
+      b = tests.pt(a.x + 40.mm * Math.cos(dir), a.y + 40.mm * Math.sin(dir), 8.mm)
+      ends = [a, tests.pt(a.x, a.y, 0), b, tests.pt(b.x, b.y, 0)]
+      tests.push_circle(model.entities, a, 20.mm, -8.mm, 24)
+      tests.push_circle(model.entities, b, 20.mm, -8.mm, 48)
+      got = tests.circles_at(model.entities, *ends)
+      next c.check(false, 'holes built', got.inspect) unless got == [[[20.0, 24]]] * 2 + [[[20.0, 48]]] * 2
+      [['Circle', '48s', 48], ['Cylinder Resize Tool', '36s', 36]].each do |label, text, n|
+        tests.status.clear
+        tests.messages.clear
+        top = tests.arcs_at(model.entities, a).first.edges
+        if label == 'Circle'
+          tests.select(model, top)
+          tool, _ip = tests.circle_tool(model)
+        else
+          tests.select(model, top.flat_map(&:faces).reject { |f| f.normal.parallel?(Z_AXIS) })
+          tool = tests.resize_tool(model)
+        end
+        tool.onUserText(text, tests.view)
+        model.select_tool(nil)
+        got = tests.circles_at(model.entities, *ends)
+        ok = c.check(got == [[[20.0, n]]] * 2 + [[[20.0, 48]]] * 2,
+                     "#{label}, #{text}: hole a #{n} segments, hole b untouched", got.inspect)
+        tests.note_feedback(c) unless ok
       end
     end
 

@@ -373,8 +373,14 @@ module CircleMaster
       v.dot(normal).abs < tol && (v.length.to_f - radius).abs < tol
     end
 
+    # Edge of the new circle of +frame+: both ends on the circle and, since
+    # Circle Master 1.0.1, part of a native circle centered there. An edge of
+    # another circle touching it (a tangent hole) can have both ends on the
+    # circle within the tolerance; its curve is centered elsewhere.
     def self.ring_edge?(edge, frame)
-      on_circle?(edge.start.position, frame) && on_circle?(edge.end.position, frame)
+      return false unless on_circle?(edge.start.position, frame) && on_circle?(edge.end.position, frame)
+      curve = edge.curve
+      curve.is_a?(Sketchup::ArcCurve) && curve.center.distance(frame[0]).to_f < tolerance(frame[3])
     end
 
     def self.ring_edges(entities, frame)

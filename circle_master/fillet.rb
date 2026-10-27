@@ -301,10 +301,16 @@ module CircleMaster
       v.dot(normal).abs <= tol && (v.length.to_f - radius).abs <= tol
     end
 
+    # Edges on the circle that belong to a native arc centered there (Circle
+    # Master 1.0.1: an edge of a hole touching the extension of the circle
+    # can have both ends on it within the tolerance; its curve is centered
+    # elsewhere).
     def self.ring_edges(entities, center, normal, radius, tol)
       entities.grep(Sketchup::Edge).select do |e|
-        on_circle?(e.start.position, center, normal, radius, tol) &&
-          on_circle?(e.end.position, center, normal, radius, tol)
+        next false unless on_circle?(e.start.position, center, normal, radius, tol) &&
+                          on_circle?(e.end.position, center, normal, radius, tol)
+        curve = e.curve
+        curve.is_a?(Sketchup::ArcCurve) && curve.center.distance(center).to_f <= tol
       end
     end
 

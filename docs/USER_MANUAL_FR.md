@@ -2,7 +2,7 @@
 
 *[English version](USER_MANUAL_EN.md)*
 
-Version 1.0.0
+Version 1.0.1
 
 ## 1. Présentation
 
@@ -286,6 +286,11 @@ l'avertissement passe en rouge et une confirmation est demandée à l'enregistre
 - Un arc dont les segments seraient plus courts que la tolérance de SketchUp (0,001″ ≈ 0,025 mm)
   ne peut pas être tracé, même par les outils natifs (par exemple un quart de cercle de rayon
   0,5 mm en 48 segments).
+- Cercles qui se touchent (trous ou tenons tangents) : près du point de contact, leurs arêtes ne
+  sont qu'à quelques centièmes de millimètre. Quand un sommet du cercle reconstruit tombe à moins
+  de 0,001″ (≈ 0,025 mm) de l'autre cercle, SketchUp les soude, et le changement est refusé
+  (« … could not be rebuilt, nothing was changed »). Un écart de 0,1 mm
+  entre eux suffit.
 - Pas de séparateur de milliers (`1,000` est lu comme 1 sur un PC qui utilise le point décimal).
 
 ## 12. Dépannage

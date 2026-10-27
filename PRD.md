@@ -2,7 +2,7 @@
 
 > Le *quoi* et le *pourquoi*. Le *comment* sera dans `FSD.md`. Directives de construction : `DIRECTIVES_BUNDLE.md`.
 
-Dernière mise à jour : 2026-10-26 (livraison 1.0.0).
+Dernière mise à jour : 2026-10-27 (livraison 1.0.1).
 
 ## 1. Contexte et problème
 
@@ -80,6 +80,8 @@ Priorité : **I** = indispensable, **Im** = important, **S** = souhaitable.
 
 Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 à C7, M1 à M6, F1 à F3, K1, K2, D1), CA-02 (R1), CA-03 (R5, E1 à E8), CA-04 et CA-07 (P1, 92 cas avec le vrai `to_l`), CA-06 (2021 Pro 42/42, Make 2017 40/40 avec C7 et R7 sautés : SketchUp 2020.1+), CA-08 (S5, R5, R8 à R10). CA-05 (D3, 6 contrôles : anciennes sections lues, priorités, écriture dans CircleMaster seulement). Batterie de livraison : 2021 Pro 43/43, Make 2017 41/41 (C7 et R7 sautés).
 
+Vérification du 2026-10-27 (1.0.1) : F4 (coin arrondi à côté d'un trou tangent au prolongement de son cercle) et R11 (deux trous tangents) pour EF-01 et EF-12 ; batterie 2021 Pro 45/45, Make 2017 43/43 (C7 et R7 sautés).
+
 ## 9. Questions ouvertes et décisions
 
 ### Questions ouvertes
@@ -110,9 +112,11 @@ Vérification du 2026-10-26 (batterie automatique, `tools/tests/`) : CA-01 (C1 �
 | 2026-10-26 | Séparateur décimal | Point et virgule acceptés (EF-11), exception à « rien de nouveau en 1.0.0 » ; `;` reste le seul séparateur de valeurs ; pas de séparateur de milliers |
 | 2026-10-26 | Champ *Mode* de la fenêtre Resize Cylinders | Lu dans le réglage commun et écrit s'il change : l'outil Circle suit le choix fait dans la fenêtre |
 | 2026-10-26 | Reprise de `input_mode` | Lu dans `CircleMaster`, sinon `CircleAdvanced/input_mode`, sinon `CylinderResize/mode` : Circle Advanced l'emporte si les deux anciens diffèrent |
+| 2026-10-27 | Cercle voisin compté avec le cercle reconstruit (trouvé en faisant les images de publication) | Corrigé en 1.0.1 **avant la publication sur SketchUcation**, pour les coins arrondis et les cylindres (demande de l'utilisateur) : une arête n'est retenue que si elle appartient à une `ArcCurve` centrée sur le cercle. Pas de décalage automatique de la géométrie (proposé puis écarté : il changerait les cotes, et 0,001 mm resterait dans la tolérance de 0,5 % du rayon) |
 
 ## 10. Historique des livraisons
 
 | Date | Version / commit | Exigences livrées |
 |---|---|---|
 | 2026-10-26 | 1.0.0 (tag `v1.0.0`, dépôt privé) | EF-01 à EF-12, NF-01 à NF-06 ; batterie 2021 Pro et Make 2017 |
+| 2026-10-27 | 1.0.1 (tag `v1.0.1`, dépôt public) | Correctif d'EF-01 (segments d'un coin arrondi) et d'EF-12 / segments d'une extrémité de cylindre : cercle voisin tangent ; batterie 2021 Pro 45/45, Make 2017 43/43 |

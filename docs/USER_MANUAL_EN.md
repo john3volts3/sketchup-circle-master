@@ -2,7 +2,7 @@
 
 *[Version française](USER_MANUAL_FR.md)*
 
-Version 1.0.0
+Version 1.0.1
 
 ## 1. Overview
 
@@ -277,6 +277,11 @@ is asked when saving a change.
 - Recreated faces lose their texture position and attributes.
 - An arc whose segments would be shorter than SketchUp's tolerance (0.001″ ≈ 0.025 mm) cannot be
   drawn, even by the native tools (e.g. a quarter circle of radius 0.5 mm in 48 segments).
+- Circles that touch each other (tangent holes or pins): near the contact point their edges are
+  only a few hundredths of a millimeter apart. When a vertex of the rebuilt circle falls closer
+  than 0.001″ (≈ 0.025 mm) to the other circle, SketchUp joins them, and the change is refused
+  ("… could not be rebuilt, nothing was changed"). A gap of 0.1 mm between
+  them is enough.
 - Thousands separators are not supported (`1,000` is read as 1 on a PC using the decimal
   point).
 
