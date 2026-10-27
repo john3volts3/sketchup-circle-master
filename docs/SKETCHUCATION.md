@@ -24,7 +24,7 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 - **License:** Free (MIT)
 - **Support Link (More info button):** https://github.com/john3volts3/sketchup-circle-master
 - **YouTube link (Tutorial):** none yet
-- **Categories:** Drawing, Modification, 3D Printing (as offered by the form)
+- **Categories:** Drawing, Modification, 3D Printing, Construction (as offered by the form; Construction lists other geometry tools such as Box, Shapes or Smart PushPull)
 - **Icon:** `Circle_Master.png`, 54 × 54 px (made by `tools/demo/make_images.py`)
 - **Screenshots:** `docs/images/cm_segments.png` (main), `cm_settings.png`, `cm_resize.png`; copies 690 px wide for the page
 

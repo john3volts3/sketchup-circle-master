@@ -231,3 +231,10 @@
 - **Release GitHub** `v1.1.0` (« Latest ») avec `circle_master.rbz` (55 577 octets) et notes en anglais ; téléchargement sans connexion vérifié (identique au `.rbz` de `build/`).
 - **SketchUcation** (fiche **déjà publiée** : mise à jour en direct, accord explicite de l'utilisateur) : fiche `Circle_Master` vérifiée avant toute modification (`pln=Circle_Master`, nom, `.rbz`, textes de la 1.0.1 aux mêmes longueurs que l'ancien `docs/SKETCHUCATION.md`) ; *Files* — `Circle_Master.rbz` 1.0.1 retiré (`window.alert` redirigé vers la console avant) puis `Circle_Master.rbz` 1.1.0 envoyé (asset de la release) ; *Basic Info* — version 1.1.0 (saisie au clavier) ; *Overview*, *Start*, *Documentation*, *Release Notes* — textes de `docs/SKETCHUCATION.md` (valeur posée puis événement `keyup` déclenché). Chaque onglet enregistré, puis vérifié en rouvrant l'éditeur : version 1.1.0, `.rbz` présent, longueurs 4215, 691, 3192, 868, cases de compatibilité 2017 à 2027 inchangées. Bouton marche/arrêt jamais touché.
 - **docs/SKETCHUCATION.md** — État de la page (mise à jour 1.1.0).
+
+### Catégories SketchUcation
+
+- **Constat** : *Basic Info* de la fiche `Circle_Master` montrait aussi « Construction » et « Standard », cochées par l'utilisateur ; `docs/SKETCHUCATION.md` n'en indiquait que trois.
+- Vérification sur le PluginStore (lecture seule) : 16 catégories, reprises en partie des barres d'outils de SketchUp ; *Construction* (31 extensions) regroupe des outils qui créent de la géométrie (Box, Shapes, Rotated Rectangle Hole Tool, Smart PushPull) ; *Standard* (30) surtout des outils d'interface (Launch It, Ruby Console+, Toolbar Editor, FullScreen, SmoothZoom).
+- **Décision de l'utilisateur** : Construction gardée, Standard décochée (fait par l'utilisateur sur la page).
+- **docs/SKETCHUCATION.md** — Catégories : Drawing, Modification, 3D Printing, Construction.
