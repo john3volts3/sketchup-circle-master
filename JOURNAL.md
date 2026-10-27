@@ -173,3 +173,12 @@
 - **tools/tests/command_cases.rb** — R11 refait avec des trous **Ø 40** (arêtes en vis-à-vis à 0,086 mm : dans la tolérance de Circle Master, 0,1 mm, loin de la soudure de SketchUp) : `48s` par l'outil Circle puis `36s` par Cylinder Resize Tool (parois du seul trou visé) sur le même trou. Vérifié : F4 et R11 échouent sur une copie de la 1.0.0 tirée de git (dossier de travail).
 - **docs/USER_MANUAL_EN.md**, **docs/USER_MANUAL_FR.md**, **docs/SKETCHUCATION.md** — Limite : cercles qui se touchent, soudés par SketchUp à moins de 0,001″ ; un écart de 0,1 mm suffit. **FSD.md** — Même limite, R11.
 - **docs/SKETCHUCATION.md** — Version 1.0.1, résultats des tests, notes de version v1.0.1, liste de ce qui reste à faire sur le brouillon.
+
+### Livraison 1.0.1
+
+- **Test utilisateur** : « Teste OK » (géométrie de test avec trous Ø 40, coin arrondi `16s`, trou `48s` puis Cylinder Resize Tool `36s`).
+- **Batterie finale** : SketchUp 2021 Pro 45/45, Make 2017 43/43 (C7, R7 sautés) ; `build/circle_master.rbz` identique au tag `v1.0.1` (25 fichiers comparés).
+- **Commits** `43cd6e9` (images de publication et `tools/demo/`, `.gitignore`) et `8eebc48` (correctif 1.0.1, tests, documentation) ; recherche de données personnelles dans `git diff --cached` avant chaque commit : rien. Tag `v1.0.1`, push.
+- **Release GitHub** `v1.0.1` (« Latest ») avec `circle_master.rbz` (51 523 octets) et notes en anglais (correctif, limite des cercles qui se touchent, versions testées) ; téléchargement vérifié sans connexion.
+- **SketchUcation**, brouillon `Circle_Master` (Chrome de l'utilisateur) : *Files* — `Circle_Master.rbz` 1.0.0 retiré (*Remove & Update*, `window.alert` redirigé vers la console avant) puis `Circle_Master.rbz` 1.0.1 envoyé (copie de l'asset de la release) ; *Basic Info* — version 1.0.1 (saisie au clavier, pour l'événement `keyup`) ; *Overview* — résultats 45/45 et 43/43 ; *Documentation* — limite des cercles qui se touchent ; *Release Notes* — v1.0.1 au-dessus de v1.0.0. Chaque onglet enregistré (disquette verte), puis vérifié en rouvrant l'éditeur : version, longueurs des textes (*Overview* 3941, *Documentation* 3080 = texte de `docs/SKETCHUCATION.md`, *Release Notes* 635), `.rbz` présent. **Toujours non publiée** (bouton marche/arrêt jamais touché).
+- **docs/SKETCHUCATION.md** — État du brouillon à jour.
