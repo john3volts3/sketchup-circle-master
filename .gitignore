@@ -12,3 +12,6 @@ tools/tests/results/
 
 # Personal test models of the user
 mes tests/
+
+# Python cache (tools/demo)
+__pycache__/
