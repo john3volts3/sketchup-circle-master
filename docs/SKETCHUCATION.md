@@ -7,6 +7,8 @@ Text for the SketchUcation PluginStore listing: copy each section into the match
 > **2026-10-27**: version 1.0.1 (fix: a neighboring circle touching the rebuilt one). Draft updated: `Circle_Master.rbz` replaced with the asset of the GitHub release `v1.0.1` (Files > Remove & Update, then upload); Basic Info version 1.0.1; Overview test results 45/45 and 43/43; Documentation, limitation of circles that touch; Release Notes v1.0.1 above v1.0.0. Each tab saved and checked by reloading the editor; still **not published**.
 >
 > **2026-10-27**: published by the author. Compatibility boxes **SU 2017 to SU 2027** ticked by the author after a theoretical check of the versions (see `FSD.md`, "Compatibilité des versions"); saved state checked by reloading the editor.
+>
+> **2026-10-27**: version 1.1.0 (Resize Cylinders window: Segments field, Step buttons). Live page updated (already published): `Circle_Master.rbz` replaced with the asset of the GitHub release `v1.1.0` (Files > Remove & Update, then upload); Basic Info version 1.1.0 (typed, for the `keyup` event); Overview, Start, Documentation and Release Notes replaced with the sections of this file (value set, then the `keyup` event triggered). Each tab saved and checked by reloading the editor: version, `.rbz` present, text lengths 4215, 691, 3192 and 868. Power button never touched.
 
 ---
 
